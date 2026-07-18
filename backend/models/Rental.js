@@ -1,179 +1,98 @@
-const { query } = require('../config/database');
+const prisma = require('../config/prisma');
+const { serializeRental, rentalInclude } = require('../utils/serializers');
+const { syncLifecycleStatuses } = require('../services/rentalLifecycle');
 
 const Rental = {
+  syncLifecycleStatuses,
+
   async findAll() {
-    const result = await query(`
-      SELECT r.*,
-             p.name AS "productName",
-             p."pricePerDay",
-             p.category,
-             p."imageUrl",
-             d.amount AS "depositAmount",
-             d.status AS "depositStatus",
-             d.id AS "depositId",
-             c.email AS "customerEmail"
-      FROM rentals r
-      LEFT JOIN products p ON r."productId" = p.id
-      LEFT JOIN deposits d ON d."rentalId" = r.id
-      LEFT JOIN customers c ON r."customerId" = c.id
-      ORDER BY r.id DESC
-    `);
-    return result.rows;
+    const rentals = await prisma.rental.findMany({
+      include: rentalInclude,
+      orderBy: { id: 'desc' },
+    });
+    return rentals.map(serializeRental);
   },
 
   async findById(id) {
-    const result = await query(
-      `SELECT r.*,
-              p.name AS "productName",
-              p."pricePerDay",
-              p.category,
-              p."imageUrl",
-              p.description,
-              d.amount AS "depositAmount",
-              d.status AS "depositStatus",
-              d.id AS "depositId"
-       FROM rentals r
-       LEFT JOIN products p ON r."productId" = p.id
-       LEFT JOIN deposits d ON d."rentalId" = r.id
-       WHERE r.id = $1`,
-      [id]
-    );
-    return result.rows[0] || null;
+    const rental = await prisma.rental.findUnique({
+      where: { id: Number(id) },
+      include: rentalInclude,
+    });
+    return serializeRental(rental);
   },
 
   async findByCustomer(customerId) {
-    const result = await query(
-      `SELECT r.*,
-              p.name AS "productName",
-              p.category,
-              p."imageUrl",
-              p."pricePerDay",
-              p.description,
-              d.amount AS "depositAmount",
-              d.status AS "depositStatus",
-              d.id AS "depositId"
-       FROM rentals r
-       LEFT JOIN products p ON r."productId" = p.id
-       LEFT JOIN deposits d ON d."rentalId" = r.id
-       WHERE r."customerId" = $1
-       ORDER BY r.id DESC`,
-      [customerId]
-    );
-    return result.rows;
+    const rentals = await prisma.rental.findMany({
+      where: { customerId: Number(customerId) },
+      include: rentalInclude,
+      orderBy: { id: 'desc' },
+    });
+    return rentals.map(serializeRental);
   },
 
   async findByIdForCustomer(id, customerId) {
-    const result = await query(
-      `SELECT r.*,
-              p.name AS "productName",
-              p.category,
-              p."imageUrl",
-              p."pricePerDay",
-              p.description,
-              d.amount AS "depositAmount",
-              d.status AS "depositStatus",
-              d.id AS "depositId"
-       FROM rentals r
-       LEFT JOIN products p ON r."productId" = p.id
-       LEFT JOIN deposits d ON d."rentalId" = r.id
-       WHERE r.id = $1 AND r."customerId" = $2`,
-      [id, customerId]
-    );
-    return result.rows[0] || null;
+    const rental = await prisma.rental.findFirst({
+      where: { id: Number(id), customerId: Number(customerId) },
+      include: rentalInclude,
+    });
+    return serializeRental(rental);
   },
 
-  async create({
-    customerName,
-    customerId = null,
-    productId,
-    startDate,
-    returnDate,
-    amount,
-    status = 'Active',
-  }) {
-    const result = await query(
-      `INSERT INTO rentals ("customerName", "customerId", "productId", "startDate", "returnDate", amount, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [customerName, customerId, productId, startDate, returnDate, amount, status]
-    );
-    return result.rows[0];
+  async create(data) {
+    const rental = await prisma.rental.create({
+      data: {
+        customerName: data.customerName,
+        customerId: data.customerId ?? null,
+        productId: Number(data.productId),
+        startDate: new Date(data.startDate),
+        returnDate: new Date(data.returnDate),
+        amount: Number(data.amount),
+        status: data.status || 'Active',
+        fulfillment: data.fulfillment || 'pickup',
+        shippingAddress: data.shippingAddress || '',
+        lateFee: 0,
+      },
+    });
+    return this.findById(rental.id);
   },
 
   async update(id, data) {
-    const fields = [];
-    const values = [];
-    let i = 1;
-
-    for (const [key, value] of Object.entries(data)) {
-      if (value !== undefined) {
-        fields.push(`"${key}" = $${i++}`);
-        values.push(value);
-      }
-    }
-
-    if (fields.length === 0) return this.findById(id);
-
-    values.push(id);
-    const result = await query(
-      `UPDATE rentals SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,
-      values
-    );
-    return result.rows[0] || null;
+    await prisma.rental.update({
+      where: { id: Number(id) },
+      data: {
+        ...(data.status != null && { status: data.status }),
+        ...(data.lateFee != null && { lateFee: Number(data.lateFee) }),
+        ...(data.amount != null && { amount: Number(data.amount) }),
+      },
+    });
+    return this.findById(id);
   },
 
   async getPendingReturns() {
-    const result = await query(`
-      SELECT r.*,
-             p.name AS "productName",
-             p."pricePerDay",
-             d.amount AS "depositAmount",
-             d.status AS "depositStatus"
-      FROM rentals r
-      LEFT JOIN products p ON r."productId" = p.id
-      LEFT JOIN deposits d ON d."rentalId" = r.id
-      WHERE r.status IN ('Active', 'Return Pending', 'Requested')
-      ORDER BY r."returnDate" ASC
-    `);
-    return result.rows;
+    const rentals = await prisma.rental.findMany({
+      where: { status: { in: ['Active', 'Return Pending', 'Requested', 'Approved'] } },
+      include: rentalInclude,
+      orderBy: { returnDate: 'asc' },
+    });
+    return rentals.map(serializeRental);
   },
 
   async getCustomerStats(customerId) {
-    const result = await query(
-      `SELECT
-         COUNT(*) FILTER (WHERE status = 'Active')::int AS "activeRentals",
-         COUNT(*) FILTER (WHERE status IN ('Active', 'Return Pending') AND "returnDate" >= CURRENT_DATE)::int AS "upcomingReturns",
-         COUNT(*) FILTER (WHERE status = 'Completed')::int AS "completedRentals",
-         COUNT(*) FILTER (WHERE status = 'Requested')::int AS "pendingRequests"
-       FROM rentals
-       WHERE "customerId" = $1`,
-      [customerId]
-    );
-    return result.rows[0];
-  },
+    const cid = Number(customerId);
+    const [activeRentals, upcomingReturns, completedRentals, pendingRequests] =
+      await Promise.all([
+        prisma.rental.count({ where: { customerId: cid, status: 'Active' } }),
+        prisma.rental.count({
+          where: {
+            customerId: cid,
+            status: { in: ['Active', 'Return Pending'] },
+          },
+        }),
+        prisma.rental.count({ where: { customerId: cid, status: 'Completed' } }),
+        prisma.rental.count({ where: { customerId: cid, status: 'Requested' } }),
+      ]);
 
-  /** Shared lifecycle sync for admin + customer views */
-  async syncLifecycleStatuses(customerId = null) {
-    const customerFilter = customerId ? `AND "customerId" = $1` : '';
-    const params = customerId ? [customerId] : [];
-
-    await query(
-      `UPDATE rentals SET status = 'Return Pending'
-       WHERE status IN ('Active', 'Overdue')
-         AND "returnDate" < CURRENT_DATE
-         ${customerFilter}`,
-      params
-    );
-
-    await query(
-      `UPDATE rentals SET status = 'Active'
-       WHERE status = 'Requested'
-         AND "startDate" <= CURRENT_DATE
-         AND "returnDate" >= CURRENT_DATE
-         ${customerFilter}`,
-      params
-    );
-
-    await query(`UPDATE rentals SET status = 'Return Pending' WHERE status = 'Overdue'`);
+    return { activeRentals, upcomingReturns, completedRentals, pendingRequests };
   },
 };
 

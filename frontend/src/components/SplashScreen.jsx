@@ -42,6 +42,7 @@ export default function SplashScreen({ onComplete }) {
         <RentelioLogo
           size="xl"
           centered
+          spin
           showTagline
           colorClass="text-white"
           taglineClass="splash-tagline"

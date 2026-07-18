@@ -1,28 +1,20 @@
-const { query } = require('../config/database');
+const prisma = require('../config/prisma');
 
 const User = {
-  async findByEmail(email) {
-    const result = await query('SELECT * FROM users WHERE email = $1', [email]);
-    return result.rows[0] || null;
-  },
+  findByEmail: (email) =>
+    prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } }),
 
-  async findById(id) {
-    const result = await query(
-      'SELECT id, name, email, role FROM users WHERE id = $1',
-      [id]
-    );
-    return result.rows[0] || null;
-  },
+  findById: (id) => prisma.user.findUnique({ where: { id: Number(id) } }),
 
-  async create({ name, email, password, role = 'user' }) {
-    const result = await query(
-      `INSERT INTO users (name, email, password, role)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, email, role`,
-      [name, email, password, role]
-    );
-    return result.rows[0];
-  },
+  create: (data) =>
+    prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email.toLowerCase().trim(),
+        password: data.password,
+        role: data.role || 'user',
+      },
+    }),
 };
 
 module.exports = User;

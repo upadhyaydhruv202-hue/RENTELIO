@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import ProductMedia from './ProductMedia';
 import { formatDate, formatINR } from '../services/api';
 
 const statusStyles = {
@@ -18,13 +19,15 @@ const statusLabels = {
 export default function OrderCard({ rental }) {
   return (
     <Link
-      to={`/shop/rentals/${rental.id}`}
+      to={`/user/rentals/${rental.id}`}
       className="flex gap-4 rounded-2xl border border-ink-200/80 bg-white p-4 transition hover:border-brand-300 hover:shadow-sm dark:border-ink-700 dark:bg-ink-900"
     >
-      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-ink-100 dark:bg-ink-800">
-        {rental.imageUrl ? (
-          <img src={rental.imageUrl} alt="" className="h-full w-full object-cover" />
-        ) : null}
+      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-ink-100 bg-white dark:border-ink-800 dark:bg-ink-900">
+        <ProductMedia
+          src={rental.image || rental.imageUrl}
+          alt={rental.productName || ''}
+          frameClassName="h-full w-full p-1"
+        />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-start justify-between gap-2">

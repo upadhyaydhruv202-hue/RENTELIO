@@ -1,17 +1,26 @@
+const { verifyToken } = require('../utils/jwt');
 const Customer = require('../models/Customer');
 
-/** Simple customer auth: Authorization: Bearer customer-token-{id} */
 const requireCustomer = async (req, res, next) => {
   try {
     const header = req.headers.authorization || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : '';
-    const match = /^customer-token-(\d+)$/.exec(token);
-
-    if (!match) {
+    if (!token) {
       return res.status(401).json({ message: 'Please log in to continue' });
     }
 
-    const customer = await Customer.findById(Number(match[1]));
+    let payload;
+    try {
+      payload = verifyToken(token);
+    } catch {
+      return res.status(401).json({ message: 'Invalid or expired session' });
+    }
+
+    if (payload.type !== 'customer') {
+      return res.status(401).json({ message: 'Invalid session' });
+    }
+
+    const customer = await Customer.findById(payload.id);
     if (!customer) {
       return res.status(401).json({ message: 'Invalid session' });
     }

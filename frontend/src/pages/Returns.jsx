@@ -21,10 +21,11 @@ export default function Returns() {
     mutationFn: ({ id }) => api.updateRental(id, { markReturned: true }),
     onSuccess: async (result, variables) => {
       const late = Number(result.lateCharge || 0);
+      const refunded = Number(result.refundedAmount || 0);
       setMessage(
         late > 0
-          ? `Rental #${variables.id} completed. Late charge: ₹${late.toLocaleString('en-IN')}. Product is Available again.`
-          : `Rental #${variables.id} completed. Product restored to Available. Deposit refunded.`
+          ? `Rental #${variables.id} completed. Late fee ₹${late.toLocaleString('en-IN')} deducted from deposit. ₹${refunded.toLocaleString('en-IN')} refunded. Product Available again.`
+          : `Rental #${variables.id} completed. Full deposit ₹${refunded.toLocaleString('en-IN')} refunded. Product restored to Available.`
       );
       setError('');
       await invalidateLifecycle(queryClient);
@@ -62,7 +63,7 @@ export default function Returns() {
       <div>
         <h1 className="font-display text-2xl font-semibold">Return Tracking</h1>
         <p className="text-sm text-ink-500">
-          Confirm return → product Available on shop · rental Completed · deposit Refunded
+          Confirm return → late fee deducted from deposit if overdue · remainder refunded · product Available
         </p>
       </div>
 

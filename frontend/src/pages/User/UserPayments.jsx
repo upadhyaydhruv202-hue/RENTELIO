@@ -64,7 +64,7 @@ export default function UserPayments() {
                 {rentals.map((r) => (
                   <tr key={r.id}>
                     <td className="px-4 py-3">
-                      <Link to={`/shop/rentals/${r.id}`} className="text-brand-700 hover:underline">
+                      <Link to={`/user/rentals/${r.id}`} className="text-brand-700 hover:underline">
                         #{r.id} · {r.productName}
                       </Link>
                     </td>

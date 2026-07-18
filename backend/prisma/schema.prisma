@@ -1,0 +1,436 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  email     String   @unique @db.VarChar(150)
+  password  String   @db.VarChar(255)
+  role      String   @default("user") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Customer {
+  id            Int            @id @default(autoincrement())
+  name          String         @db.VarChar(100)
+  email         String         @unique @db.VarChar(150)
+  password      String         @db.VarChar(255)
+  phone         String         @default("") @db.VarChar(30)
+  address       String         @default("")
+  profileImage  String         @default("") @map("profile_image")
+  status        String         @default("Active") @db.VarChar(20)
+  verified      Boolean        @default(false)
+  idDocumentUrl String         @default("") @map("id_document_url")
+  language      String         @default("en") @db.VarChar(10)
+  walletBalance Decimal        @default(0) @map("wallet_balance") @db.Decimal(12, 2)
+  fraudScore    Int            @default(10) @map("fraud_score")
+  complaintsCount Int          @default(0) @map("complaints_count")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  rentals       Rental[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  walletTxns    WalletTxn[]
+  notifications Notification[]
+  reviews       Review[]
+  quotations    Quotation[]
+
+  @@map("customers")
+}
+
+model Product {
+  id                Int            @id @default(autoincrement())
+  name              String         @db.VarChar(150)
+  category          String         @db.VarChar(100)
+  quantity          Int            @default(1)
+  pricePerDay       Decimal        @db.Decimal(10, 2)
+  status            String         @default("Available") @db.VarChar(50)
+  description       String         @default("")
+  image             String
+  securityDeposit   Decimal        @default(0) @db.Decimal(10, 2)
+  brand             String         @default("") @db.VarChar(100)
+  color             String         @default("") @db.VarChar(50)
+  size              String         @default("") @db.VarChar(50)
+  storage           String         @default("") @db.VarChar(50)
+  edition           String         @default("") @db.VarChar(50)
+  condition         String         @default("Good") @db.VarChar(50)
+  warranty          String         @default("") @db.VarChar(100)
+  material          String         @default("") @db.VarChar(80)
+  archived          Boolean        @default(false)
+  maintenanceStatus String         @default("None") @map("maintenance_status") @db.VarChar(40)
+  maintenanceNote   String         @default("") @map("maintenance_note")
+  reservedQty       Int            @default(0) @map("reserved_qty")
+  nextInspectionAt  DateTime?      @map("next_inspection_at")
+  vendorId          Int?           @map("vendor_id")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  vendor            Vendor?        @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  rentals           Rental[]
+  cartItems         CartItem[]
+  wishlistItems     WishlistItem[]
+  reviews           Review[]
+  quotations        Quotation[]
+
+  @@index([vendorId])
+  @@map("products")
+}
+
+model Rental {
+  id               Int       @id @default(autoincrement())
+  customerName     String    @db.VarChar(150)
+  customerId       Int?
+  productId        Int
+  startDate        DateTime  @db.Date
+  returnDate       DateTime  @db.Date
+  amount           Decimal   @db.Decimal(10, 2)
+  lateFee          Decimal   @default(0) @db.Decimal(10, 2)
+  damageCharge     Decimal   @default(0) @map("damage_charge") @db.Decimal(10, 2)
+  discountAmount   Decimal   @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  couponCode       String    @default("") @map("coupon_code") @db.VarChar(40)
+  status           String    @default("Active") @db.VarChar(50)
+  fulfillment      String    @default("pickup") @db.VarChar(30)
+  shippingAddress  String    @default("")
+  pickupStatus     String    @default("Scheduled") @map("pickup_status") @db.VarChar(40)
+  returnStatus     String    @default("Pending") @map("return_status") @db.VarChar(40)
+  trackerStage     String    @default("Pickup Assigned") @map("tracker_stage") @db.VarChar(40)
+  pickupOtp        String    @default("") @map("pickup_otp") @db.VarChar(10)
+  returnOtp        String    @default("") @map("return_otp") @db.VarChar(10)
+  scheduledPickup  DateTime? @map("scheduled_pickup")
+  scheduledReturn  DateTime? @map("scheduled_return")
+  pickupAt         DateTime? @map("pickup_at")
+  returnedAt       DateTime? @map("returned_at")
+  rating           Int?
+  review           String    @default("")
+  damageReport     String    @default("") @map("damage_report")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  customer         Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  product          Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  deposit          Deposit?
+
+  @@index([customerId])
+  @@index([productId])
+  @@index([status])
+  @@map("rentals")
+}
+
+model Deposit {
+  id              Int            @id @default(autoincrement())
+  rentalId        Int            @unique
+  amount          Decimal        @db.Decimal(10, 2)
+  refundedAmount  Decimal        @default(0) @db.Decimal(10, 2)
+  lateFeeDeducted Decimal        @default(0) @db.Decimal(10, 2)
+  status          String         @default("Held") @db.VarChar(50)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  rental          Rental         @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  events          DepositEvent[]
+
+  @@map("deposits")
+}
+
+model DepositEvent {
+  id        Int      @id @default(autoincrement())
+  depositId Int
+  type      String   @db.VarChar(40)
+  amount    Decimal  @default(0) @db.Decimal(10, 2)
+  note      String   @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+  deposit   Deposit  @relation(fields: [depositId], references: [id], onDelete: Cascade)
+
+  @@map("deposit_events")
+}
+
+model Setting {
+  id                Int     @id @default(autoincrement())
+  lateFeePerDay     Decimal @default(0) @db.Decimal(10, 2)
+  gracePeriodHours  Int     @default(0)
+  maxLateFeePercent Int     @default(100)
+  depositType       String  @default("fixed") @db.VarChar(20)
+  depositPercent    Int     @default(0)
+  orgName            String  @default("Rentelio") @db.VarChar(150)
+  commissionPercent Int     @default(10) @map("commission_percent")
+
+  @@map("settings")
+}
+
+model Activity {
+  id        Int      @id @default(autoincrement())
+  type      String   @db.VarChar(60)
+  message   String
+  meta      String   @default("")
+  vendorId  Int?     @map("vendor_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  vendor    Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
+  @@index([vendorId])
+  @@map("activities")
+}
+
+model Quotation {
+  id            Int       @id @default(autoincrement())
+  customerId    Int?
+  productId     Int?
+  customerName  String    @db.VarChar(150)
+  productName   String    @db.VarChar(150)
+  days          Int       @default(1)
+  offeredAmount Decimal   @db.Decimal(10, 2)
+  counterAmount Decimal?  @db.Decimal(10, 2)
+  status        String    @default("Requested") @db.VarChar(30)
+  notes         String    @default("")
+  history       String    @default("")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  product       Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("quotations")
+}
+
+model Vendor {
+  id              Int              @id @default(autoincrement())
+  name            String           @db.VarChar(150)
+  email           String           @unique @db.VarChar(150)
+  password        String           @default("") @db.VarChar(255)
+  phone           String           @default("") @db.VarChar(30)
+  company         String           @default("") @db.VarChar(150)
+  ownerName       String           @default("") @map("owner_name") @db.VarChar(150)
+  address         String           @default("")
+  location        String           @default("") @db.VarChar(150)
+  logo            String           @default("")
+  status          String           @default("Pending") @db.VarChar(30)
+  verified        Boolean          @default(false)
+  blacklisted     Boolean          @default(false)
+  performance     Int              @default(80)
+  fraudScore      Int              @default(15) @map("fraud_score")
+  kycStatus       String           @default("Pending Review") @map("kyc_status") @db.VarChar(40)
+  aadhaarUrl      String           @default("") @map("aadhaar_url")
+  panUrl          String           @default("") @map("pan_url")
+  licenseUrl      String           @default("") @map("license_url")
+  businessCertUrl String           @default("") @map("business_cert_url")
+  gstUrl          String           @default("") @map("gst_url")
+  kycNotes        String           @default("") @map("kyc_notes")
+  complaintsCount Int              @default(0) @map("complaints_count")
+  failedKycAttempts Int            @default(0) @map("failed_kyc_attempts")
+  pendingPayout   Decimal          @default(0) @map("pending_payout") @db.Decimal(12, 2)
+  paidOut         Decimal          @default(0) @map("paid_out") @db.Decimal(12, 2)
+  lateFeeMode     String           @default("daily") @map("late_fee_mode") @db.VarChar(20)
+  lateFeeAmount   Decimal          @default(0) @map("late_fee_amount") @db.Decimal(10, 2)
+  gracePeriodHours Int             @default(0) @map("grace_period_hours")
+  maxLateFeePercent Int            @default(100) @map("max_late_fee_percent")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  products        Product[]
+  activities      Activity[]
+  coupons         Coupon[]
+  discounts       DiscountOffer[]
+  notifications   VendorNotification[]
+  invoices        VendorInvoice[]
+  settlements     Settlement[]
+
+  @@map("vendors")
+}
+
+model Notification {
+  id         Int       @id @default(autoincrement())
+  customerId Int?
+  title      String    @db.VarChar(200)
+  body       String
+  type       String    @default("info") @db.VarChar(40)
+  audience   String    @default("user") @db.VarChar(20)
+  priority   String    @default("Normal") @db.VarChar(20)
+  channel    String    @default("website") @db.VarChar(40)
+  read       Boolean   @default(false)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model WalletTxn {
+  id          Int      @id @default(autoincrement())
+  customerId  Int
+  type        String   @db.VarChar(40)
+  amount      Decimal  @db.Decimal(12, 2)
+  balanceAfter Decimal @map("balance_after") @db.Decimal(12, 2)
+  note        String   @default("")
+  createdAt   DateTime @default(now()) @map("created_at")
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_txns")
+}
+
+model CartItem {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  productId  Int
+  startDate  DateTime? @db.Date
+  returnDate DateTime? @db.Date
+  createdAt  DateTime @default(now()) @map("created_at")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, productId])
+  @@map("cart_items")
+}
+
+model WishlistItem {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  productId  Int
+  createdAt  DateTime @default(now()) @map("created_at")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, productId])
+  @@map("wishlist_items")
+}
+
+model Coupon {
+  id            Int       @id @default(autoincrement())
+  code          String    @unique @db.VarChar(40)
+  type          String    @default("percent") @db.VarChar(20)
+  value         Decimal   @db.Decimal(10, 2)
+  label         String    @default("") @db.VarChar(100)
+  description   String    @default("")
+  minAmount     Decimal   @default(0) @map("min_amount") @db.Decimal(10, 2)
+  maxUsage      Int       @default(0) @map("max_usage")
+  usedCount     Int       @default(0) @map("used_count")
+  active        Boolean   @default(true)
+  vendorId      Int?      @map("vendor_id")
+  expiresAt     DateTime? @map("expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  vendor        Vendor?   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@map("coupons")
+}
+
+model DiscountOffer {
+  id          Int       @id @default(autoincrement())
+  vendorId    Int       @map("vendor_id")
+  name        String    @db.VarChar(120)
+  discountType String   @map("discount_type") @db.VarChar(40)
+  type        String    @default("percent") @db.VarChar(20)
+  value       Decimal   @db.Decimal(10, 2)
+  description String    @default("")
+  active      Boolean   @default(true)
+  startsAt    DateTime? @map("starts_at")
+  endsAt      DateTime? @map("ends_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  vendor      Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@map("discount_offers")
+}
+
+model VendorNotification {
+  id        Int      @id @default(autoincrement())
+  vendorId  Int      @map("vendor_id")
+  title     String   @db.VarChar(200)
+  body      String
+  type      String   @default("info") @db.VarChar(40)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@map("vendor_notifications")
+}
+
+model VendorInvoice {
+  id          Int      @id @default(autoincrement())
+  vendorId    Int      @map("vendor_id")
+  rentalId    Int?
+  invoiceNo   String   @db.VarChar(40)
+  type        String   @default("rental") @db.VarChar(40)
+  amount      Decimal  @db.Decimal(12, 2)
+  details     String   @default("")
+  createdAt   DateTime @default(now()) @map("created_at")
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@map("vendor_invoices")
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  productId  Int
+  rentalId   Int?
+  rating     Int
+  comment    String   @default("")
+  status     String   @default("Pending") @db.VarChar(20)
+  reported   Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+model Advertisement {
+  id        Int       @id @default(autoincrement())
+  title     String    @db.VarChar(150)
+  body      String    @default("")
+  imageUrl  String    @default("") @map("image_url")
+  linkUrl   String    @default("") @map("link_url")
+  placement String    @default("home") @db.VarChar(40)
+  active    Boolean   @default(true)
+  startsAt  DateTime? @map("starts_at")
+  endsAt    DateTime? @map("ends_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("advertisements")
+}
+
+model FraudAlert {
+  id          Int      @id @default(autoincrement())
+  severity    String   @default("medium") @db.VarChar(20)
+  title       String   @db.VarChar(150)
+  detail      String
+  fraudType   String   @default("general") @map("fraud_type") @db.VarChar(60)
+  entityType  String   @default("") @map("entity_type") @db.VarChar(20)
+  entityId    Int?
+  riskScore   Int      @default(50) @map("risk_score")
+  actionTaken String   @default("") @map("action_taken")
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("fraud_alerts")
+}
+
+model Settlement {
+  id              Int       @id @default(autoincrement())
+  vendorId        Int       @map("vendor_id")
+  rentalId        Int?      @map("rental_id")
+  settlementNo    String    @map("settlement_no") @db.VarChar(40)
+  rentalAmount    Decimal   @map("rental_amount") @db.Decimal(12, 2)
+  commission      Decimal   @default(0) @db.Decimal(12, 2)
+  taxDeduction    Decimal   @default(0) @map("tax_deduction") @db.Decimal(12, 2)
+  vendorAmount    Decimal   @map("vendor_amount") @db.Decimal(12, 2)
+  status          String    @default("Pending") @db.VarChar(30)
+  paidAt          DateTime? @map("paid_at")
+  note            String    @default("")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  vendor          Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([status])
+  @@map("settlements")
+}
+
+model BackupRecord {
+  id        Int      @id @default(autoincrement())
+  filename  String   @db.VarChar(200)
+  sizeBytes Int      @default(0) @map("size_bytes")
+  note      String   @default("")
+  backupType String  @default("manual") @map("backup_type") @db.VarChar(20)
+  createdBy String   @default("system") @map("created_by") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("backup_records")
+}

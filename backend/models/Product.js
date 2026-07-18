@@ -1,98 +1,180 @@
-const { query } = require('../config/database');
+const prisma = require('../config/prisma');
+const { serializeProduct } = require('../utils/serializers');
+const { calcSecurityDeposit } = require('../utils/pricing');
+
+const extraFields = (data, existing = {}) => ({
+  storage: data.storage != null ? data.storage : existing.storage || '',
+  edition: data.edition != null ? data.edition : existing.edition || '',
+  condition: data.condition != null ? data.condition : existing.condition || 'Good',
+  warranty: data.warranty != null ? data.warranty : existing.warranty || '',
+  material: data.material != null ? data.material : existing.material || '',
+  archived: data.archived != null ? Boolean(data.archived) : existing.archived || false,
+  maintenanceStatus:
+    data.maintenanceStatus != null
+      ? data.maintenanceStatus
+      : existing.maintenanceStatus || 'None',
+  maintenanceNote:
+    data.maintenanceNote != null ? data.maintenanceNote : existing.maintenanceNote || '',
+  reservedQty:
+    data.reservedQty != null ? Number(data.reservedQty) : existing.reservedQty || 0,
+  nextInspectionAt:
+    data.nextInspectionAt !== undefined
+      ? data.nextInspectionAt
+        ? new Date(data.nextInspectionAt)
+        : null
+      : existing.nextInspectionAt || null,
+  vendorId:
+    data.vendorId !== undefined
+      ? data.vendorId == null
+        ? null
+        : Number(data.vendorId)
+      : existing.vendorId != null
+        ? existing.vendorId
+        : undefined,
+});
 
 const Product = {
-  async findAll() {
-    const result = await query('SELECT * FROM products ORDER BY id DESC');
-    return result.rows;
+  async findAll(includeArchived = true) {
+    const products = await prisma.product.findMany({
+      where: includeArchived ? {} : { archived: false },
+      orderBy: { id: 'desc' },
+    });
+    return products.map(serializeProduct);
   },
 
   async findAvailable(filters = {}) {
-    const clauses = [`status = 'Available'`, `quantity > 0`];
-    const params = [];
-    let i = 1;
+    const where = {
+      archived: false,
+      maintenanceStatus: { not: 'UnderMaintenance' },
+    };
+
+    if (filters.available !== 'false') {
+      where.status = 'Available';
+      where.quantity = { gt: 0 };
+    }
 
     if (filters.category) {
-      clauses.push(`LOWER(category) = LOWER($${i++})`);
-      params.push(filters.category);
+      where.category = { equals: filters.category, mode: 'insensitive' };
+    }
+    if (filters.brand) {
+      where.brand = { equals: filters.brand, mode: 'insensitive' };
     }
     if (filters.search) {
-      clauses.push(`(LOWER(name) LIKE $${i} OR LOWER(category) LIKE $${i})`);
-      params.push(`%${String(filters.search).toLowerCase()}%`);
-      i += 1;
+      const q = String(filters.search);
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { category: { contains: q, mode: 'insensitive' } },
+        { brand: { contains: q, mode: 'insensitive' } },
+      ];
     }
     if (filters.minPrice != null && filters.minPrice !== '') {
-      clauses.push(`"pricePerDay" >= $${i++}`);
-      params.push(Number(filters.minPrice));
+      where.pricePerDay = { ...(where.pricePerDay || {}), gte: Number(filters.minPrice) };
     }
     if (filters.maxPrice != null && filters.maxPrice !== '') {
-      clauses.push(`"pricePerDay" <= $${i++}`);
-      params.push(Number(filters.maxPrice));
+      where.pricePerDay = { ...(where.pricePerDay || {}), lte: Number(filters.maxPrice) };
     }
 
-    const result = await query(
-      `SELECT * FROM products WHERE ${clauses.join(' AND ')} ORDER BY id DESC`,
-      params
-    );
-    return result.rows;
+    let orderBy = { id: 'desc' };
+    if (filters.sort === 'price_asc') orderBy = { pricePerDay: 'asc' };
+    if (filters.sort === 'price_desc') orderBy = { pricePerDay: 'desc' };
+    if (filters.sort === 'name') orderBy = { name: 'asc' };
+
+    const products = await prisma.product.findMany({ where, orderBy });
+    return products.map(serializeProduct);
   },
 
   async findById(id) {
-    const result = await query('SELECT * FROM products WHERE id = $1', [id]);
-    return result.rows[0] || null;
+    return serializeProduct(await prisma.product.findUnique({ where: { id: Number(id) } }));
   },
 
-  async create({
-    name,
-    category,
-    quantity,
-    pricePerDay,
-    status = 'Available',
-    description = '',
-    imageUrl = '',
-    securityDeposit = 0,
-  }) {
-    const result = await query(
-      `INSERT INTO products (name, category, quantity, "pricePerDay", status, description, "imageUrl", "securityDeposit")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [name, category, quantity, pricePerDay, status, description, imageUrl, securityDeposit]
+  async create(data) {
+    const pricePerDay = Number(data.pricePerDay);
+    if (!data.image) {
+      throw Object.assign(new Error('Please upload a product image before creating the product.'), {
+        status: 400,
+      });
+    }
+
+    return serializeProduct(
+      await prisma.product.create({
+        data: {
+          name: data.name,
+          category: data.category,
+          quantity: Number(data.quantity),
+          pricePerDay,
+          status: data.status || 'Available',
+          description: data.description || '',
+          image: data.image,
+          securityDeposit: calcSecurityDeposit(pricePerDay),
+          brand: data.brand || '',
+          color: data.color || '',
+          size: data.size || '',
+          ...extraFields(data),
+        },
+      })
     );
-    return result.rows[0];
   },
 
   async update(id, data) {
-    const existing = await this.findById(id);
+    const existing = await prisma.product.findUnique({ where: { id: Number(id) } });
     if (!existing) return null;
 
-    const result = await query(
-      `UPDATE products
-       SET name = $1, category = $2, quantity = $3, "pricePerDay" = $4, status = $5,
-           description = $6, "imageUrl" = $7, "securityDeposit" = $8
-       WHERE id = $9 RETURNING *`,
-      [
-        data.name ?? existing.name,
-        data.category ?? existing.category,
-        data.quantity != null ? data.quantity : existing.quantity,
-        data.pricePerDay != null ? data.pricePerDay : existing.pricePerDay,
-        data.status ?? existing.status,
-        data.description != null ? data.description : existing.description || '',
-        data.imageUrl != null ? data.imageUrl : existing.imageUrl || '',
-        data.securityDeposit != null ? data.securityDeposit : existing.securityDeposit || 0,
-        id,
-      ]
+    const pricePerDay =
+      data.pricePerDay != null ? Number(data.pricePerDay) : Number(existing.pricePerDay);
+    const image = data.image != null ? data.image : existing.image;
+    if (!image) {
+      throw Object.assign(new Error('Please upload a product image before creating the product.'), {
+        status: 400,
+      });
+    }
+
+    return serializeProduct(
+      await prisma.product.update({
+        where: { id: Number(id) },
+        data: {
+          name: data.name ?? existing.name,
+          category: data.category ?? existing.category,
+          quantity: data.quantity != null ? Number(data.quantity) : existing.quantity,
+          pricePerDay,
+          status: data.status ?? existing.status,
+          description: data.description != null ? data.description : existing.description,
+          image,
+          securityDeposit: calcSecurityDeposit(pricePerDay),
+          brand: data.brand != null ? data.brand : existing.brand,
+          color: data.color != null ? data.color : existing.color,
+          size: data.size != null ? data.size : existing.size,
+          ...extraFields(data, existing),
+        },
+      })
     );
-    return result.rows[0] || null;
   },
 
   async delete(id) {
-    const result = await query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
-    return result.rows[0] || null;
+    try {
+      return serializeProduct(await prisma.product.delete({ where: { id: Number(id) } }));
+    } catch {
+      return null;
+    }
   },
 
   async getCategories() {
-    const result = await query(
-      `SELECT DISTINCT category FROM products WHERE status = 'Available' AND quantity > 0 ORDER BY category`
-    );
-    return result.rows.map((r) => r.category);
+    const rows = await prisma.product.findMany({
+      where: { status: 'Available', quantity: { gt: 0 }, archived: false },
+      distinct: ['category'],
+      select: { category: true },
+      orderBy: { category: 'asc' },
+    });
+    return rows.map((r) => r.category);
+  },
+
+  async getBrands() {
+    const rows = await prisma.product.findMany({
+      where: { archived: false, brand: { not: '' } },
+      distinct: ['brand'],
+      select: { brand: true },
+      orderBy: { brand: 'asc' },
+    });
+    return rows.map((r) => r.brand);
   },
 };
 

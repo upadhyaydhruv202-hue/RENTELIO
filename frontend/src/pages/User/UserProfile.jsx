@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react';
 import OrderCard from '../../components/OrderCard';
 import { userApi } from '../../services/api';
+import { useLocale } from '../../context/LocaleContext';
 
 export default function UserProfile({ customer, onUpdate }) {
+  const { locale, setLocale, t } = useLocale();
   const [form, setForm] = useState({
     name: customer?.name || '',
     phone: customer?.phone || '',
     address: customer?.address || '',
+    profileImage: customer?.profileImage || '',
+    idDocumentUrl: customer?.idDocumentUrl || '',
+    language: customer?.language || locale || 'en',
+    password: '',
   });
   const [rentals, setRentals] = useState([]);
   const [message, setMessage] = useState('');
@@ -17,7 +23,16 @@ export default function UserProfile({ customer, onUpdate }) {
     userApi
       .getProfile()
       .then((p) => {
-        setForm({ name: p.name || '', phone: p.phone || '', address: p.address || '' });
+        setForm({
+          name: p.name || '',
+          phone: p.phone || '',
+          address: p.address || '',
+          profileImage: p.profileImage || '',
+          idDocumentUrl: p.idDocumentUrl || '',
+          language: p.language || 'en',
+          password: '',
+        });
+        if (p.language) setLocale(p.language);
         onUpdate?.(p);
       })
       .catch((err) => setError(err.message));
@@ -32,9 +47,13 @@ export default function UserProfile({ customer, onUpdate }) {
     setMessage('');
     setError('');
     try {
-      const updated = await userApi.updateProfile(form);
+      const payload = { ...form };
+      if (!payload.password) delete payload.password;
+      const updated = await userApi.updateProfile(payload);
+      if (updated.language) setLocale(updated.language);
       onUpdate?.(updated);
       setMessage('Profile updated');
+      setForm((f) => ({ ...f, password: '' }));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -45,44 +64,84 @@ export default function UserProfile({ customer, onUpdate }) {
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
       <div>
-        <h1 className="font-display text-2xl font-semibold">Your profile</h1>
-        <p className="text-sm text-ink-500">Personal information and contact details</p>
+        <h1 className="font-display text-2xl font-semibold text-ink-900 dark:text-white">{t('profile')}</h1>
+        <p className="text-sm text-ink-600 dark:text-ink-400">Address, identity, language & password</p>
 
         <form
           onSubmit={save}
-          className="mt-5 space-y-4 rounded-2xl border border-ink-200/80 bg-white p-5 dark:border-ink-700 dark:bg-ink-900"
+          className="mt-5 space-y-4 rounded-2xl border border-ink-200/80 bg-white p-5 text-ink-900 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-100"
         >
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium text-ink-800 dark:text-ink-200">
             Full name
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
+              className="mt-1.5 w-full rounded-xl border border-ink-200 bg-white px-3 py-2 text-ink-900 dark:border-ink-700 dark:bg-ink-950 dark:text-white"
               required
             />
           </label>
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium text-ink-800 dark:text-ink-200">
             Email
             <input
               value={customer?.email || ''}
               disabled
-              className="mt-1.5 w-full rounded-xl border border-ink-200 bg-ink-50 px-3 py-2 text-ink-500 dark:border-ink-700 dark:bg-ink-950"
+              className="mt-1.5 w-full rounded-xl border border-ink-200 bg-ink-50 px-3 py-2 text-ink-500 dark:border-ink-700 dark:bg-ink-950 dark:text-ink-400"
             />
           </label>
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium text-ink-800 dark:text-ink-200">
             Phone
             <input
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
+              className="mt-1.5 w-full rounded-xl border border-ink-200 bg-white px-3 py-2 text-ink-900 dark:border-ink-700 dark:bg-ink-950 dark:text-white"
             />
           </label>
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium text-ink-800 dark:text-ink-200">
             Address
             <textarea
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               rows={3}
+              className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
+            />
+          </label>
+          <label className="block text-sm font-medium">
+            ID document URL
+            <input
+              value={form.idDocumentUrl}
+              onChange={(e) => setForm({ ...form, idDocumentUrl: e.target.value })}
+              placeholder="https://… or /uploads/…"
+              className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
+            />
+          </label>
+          <label className="block text-sm font-medium">
+            {t('language')}
+            <select
+              value={form.language}
+              onChange={(e) => setForm({ ...form, language: e.target.value })}
+              className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
+            >
+              <option value="en">English</option>
+              <option value="hi">हिन्दी</option>
+              <option value="gu">ગુજરાતી</option>
+            </select>
+          </label>
+          <label className="block text-sm font-medium">
+            New password (optional)
+            <input
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              minLength={6}
+              className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
+            />
+          </label>
+          <label className="block text-sm font-medium">
+            Profile image URL
+            <input
+              value={form.profileImage}
+              onChange={(e) => setForm({ ...form, profileImage: e.target.value })}
+              placeholder="https://…"
               className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
             />
           </label>

@@ -1,100 +1,269 @@
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import Card from '../components/Card';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import StatGrid from '../components/StatGrid';
+import PageHeader from '../components/PageHeader';
 import Table, { StatusBadge } from '../components/Table';
-import { api } from '../services/api';
+import AiPulseBar from '../components/AiPulseBar';
+import { api, formatINR, formatDate } from '../services/api';
 import { POLL_MS, qk } from '../lib/query';
-
-const formatCurrency = (n) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(n || 0);
-
-const formatDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN') : '—');
 
 export default function Dashboard() {
   const { data, error, isLoading } = useQuery({
-    queryKey: qk.adminDashboard,
-    queryFn: api.getDashboard,
+    queryKey: qk.adminControlCenter,
+    queryFn: api.getControlCenter,
     refetchInterval: POLL_MS,
   });
 
-  if (isLoading) return <p className="text-ink-500">Loading dashboard…</p>;
+  const cards = useMemo(() => {
+    if (!data?.cards) return [];
+    const c = data.cards;
+    return [
+      { title: 'Registered Users', value: c.totalUsers, accent: 'sky' },
+      { title: 'Verified Vendors', value: c.verifiedVendors, accent: 'brand' },
+      { title: 'Pending Verification', value: c.pendingVendorVerification, accent: 'amber' },
+      { title: 'Active Rentals', value: c.activeRentals, accent: 'sky' },
+      { title: 'Completed Rentals', value: c.completedRentals, accent: 'brand' },
+      { title: 'Cancelled Rentals', value: c.cancelledRentals, accent: 'rose' },
+      { title: 'Total Revenue', value: formatINR(c.totalRevenue), accent: 'brand' },
+      { title: 'Platform Commission', value: formatINR(c.platformCommission), accent: 'violet' },
+      { title: 'Pending Payouts', value: formatINR(c.pendingPayouts), accent: 'amber' },
+      { title: 'Fraud Cases Open', value: c.fraudCases, accent: 'rose' },
+      { title: 'Blacklisted Accounts', value: c.blacklisted, accent: 'rose' },
+      {
+        title: 'Settlements Pending',
+        value: formatINR(c.settlementsPendingAmount),
+        subtitle: `${c.settlementsPendingCount} payouts`,
+        accent: 'slate',
+      },
+    ];
+  }, [data]);
+
+  if (isLoading) return <p className="text-ink-500">Loading control center…</p>;
   if (error) return <p className="text-rose-600">{error.message}</p>;
 
-  const { stats, statusChart, recentRentals } = data;
-  const chartItems = [
-    { label: 'New Requests', value: statusChart.Requested || 0, color: 'bg-violet-500' },
-    { label: 'Active', value: statusChart.Active || 0, color: 'bg-sky-500' },
-    { label: 'Return Pending', value: statusChart['Return Pending'] || 0, color: 'bg-amber-500' },
-    { label: 'Completed', value: statusChart.Completed || 0, color: 'bg-brand-500' },
-  ];
-  const total = chartItems.reduce((s, i) => s + i.value, 0) || 1;
-
-  const columns = [
-    { key: 'id', label: 'Rental ID', render: (r) => `#${r.id}` },
-    { key: 'customerName', label: 'Customer Name' },
-    { key: 'productName', label: 'Product Name' },
-    { key: 'startDate', label: 'Rental Date', render: (r) => formatDate(r.startDate) },
-    { key: 'returnDate', label: 'Return Date', render: (r) => formatDate(r.returnDate) },
-    {
-      key: 'depositAmount',
-      label: 'Deposit',
-      render: (r) => (r.depositAmount != null ? formatCurrency(r.depositAmount) : '—'),
-    },
-    { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} /> },
-  ];
+  const charts = data.charts || {};
+  const insights = data.aiInsights || [];
+  const recent = data.recent || {};
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-semibold text-ink-900 dark:text-white">Dashboard</h1>
-        <p className="text-sm text-ink-500">Live overview — syncs with customer bookings</p>
+      <PageHeader
+        title="Super Admin Control Center"
+        subtitle="Platform-wide visibility · finance · fraud · growth"
+        actions={
+          <>
+            <Link
+              to="/admin/fraud"
+              className="btn-living rounded-xl bg-rose-600 px-3 py-2 text-sm font-medium text-white"
+            >
+              Fraud Center
+            </Link>
+            <Link
+              to="/admin/payouts"
+              className="btn-living rounded-xl bg-brand-600 px-3 py-2 text-sm font-medium text-white"
+            >
+              Payouts
+            </Link>
+          </>
+        }
+      />
+
+      <AiPulseBar
+        title={`Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}. Your rental ecosystem is online.`}
+        body={`${data.cards.activeRentals} active rentals · ${formatINR(data.cards.totalRevenue)} GMV · ${data.cards.fraudCases} open fraud signals.`}
+      />
+
+      <StatGrid items={cards} columns="sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" />
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="holo-card chart-living p-4 lg:col-span-2">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold">Rental activity & revenue</h2>
+            <span className="text-xs text-ink-400">Conversion {data.conversionRate}%</span>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={charts.rentalActivity || []}>
+                <defs>
+                  <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8f79bc" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#8f79bc" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-ink-200 dark:stroke-ink-700" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                <YAxis yAxisId="l" tick={{ fontSize: 11 }} />
+                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Area
+                  yAxisId="r"
+                  type="monotone"
+                  dataKey="revenue"
+                  name="Revenue"
+                  stroke="#8f79bc"
+                  fill="url(#rev)"
+                />
+                <Bar yAxisId="l" dataKey="value" name="Rentals" fill="#0284c7" radius={[4, 4, 0, 0]} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="holo-card ai-pulse p-4">
+          <h2 className="font-display text-lg font-semibold">AI Insights</h2>
+          <ul className="mt-3 space-y-3">
+            {insights.map((ins) => (
+              <li
+                key={ins.title}
+                className="rounded-xl border border-ink-200/60 bg-white/70 p-3 text-sm dark:border-ink-700 dark:bg-ink-950/60"
+              >
+                <p className="font-medium text-ink-800 dark:text-ink-100">{ins.title}</p>
+                <p className="mt-1 text-ink-500">{ins.body}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Card title="Total Products" value={stats.totalProducts} accent="slate" />
-        <Card title="Available Products" value={stats.availableProducts} accent="brand" />
-        <Card title="Active Rentals" value={stats.activeRentals} accent="sky" />
-        <Card title="Pending Returns" value={stats.pendingReturns} accent="amber" />
-        <Card title="Return Pending" value={stats.overdueRentals} accent="rose" />
-        <Card title="Total Revenue" value={formatCurrency(stats.totalRevenue)} accent="brand" />
+      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+        <ChartCard title="User growth">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={charts.userGrowth || []}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-ink-200 dark:stroke-ink-700" />
+              <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip />
+              <Line type="monotone" dataKey="value" stroke="#0284c7" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+        <ChartCard title="Vendor growth">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={charts.vendorGrowth || []}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-ink-200 dark:stroke-ink-700" />
+              <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip />
+              <Line type="monotone" dataKey="value" stroke="#7c3aed" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+        <ChartCard title="Commission earnings">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={charts.commissionEarnings || []}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-ink-200 dark:stroke-ink-700" />
+              <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip />
+              <Bar dataKey="value" fill="#d97706" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-3">
+          <h2 className="font-display text-lg font-semibold">Top vendors</h2>
+          <Table
+            columns={[
+              { key: 'name', label: 'Vendor' },
+              { key: 'rentals', label: 'Rentals' },
+              { key: 'revenue', label: 'GMV', render: (r) => formatINR(r.revenue) },
+            ]}
+            rows={charts.topVendors || []}
+          />
+        </div>
+        <div className="space-y-3">
+          <h2 className="font-display text-lg font-semibold">Most rented categories</h2>
+          <Table
+            columns={[
+              { key: 'category', label: 'Category' },
+              { key: 'count', label: 'Listings' },
+            ]}
+            rows={charts.categories || []}
+          />
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-3">
-          <h2 className="font-display text-lg font-semibold">Recent Rentals</h2>
-          <Table columns={columns} rows={recentRentals} />
-        </div>
-
         <div className="space-y-3">
-          <h2 className="font-display text-lg font-semibold">Rental Status</h2>
-          <div className="rounded-2xl border border-ink-200/80 bg-white p-5 dark:border-ink-700 dark:bg-ink-900">
-            <div className="flex h-3 overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
-              {chartItems.map((item) => (
-                <div
-                  key={item.label}
-                  className={`${item.color} transition-all duration-700`}
-                  style={{ width: `${(item.value / total) * 100}%` }}
-                  title={`${item.label}: ${item.value}`}
-                />
-              ))}
-            </div>
-            <ul className="mt-5 space-y-3">
-              {chartItems.map((item) => (
-                <li key={item.label} className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2 text-ink-600 dark:text-ink-300">
-                    <span className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
-                    {item.label}
-                  </span>
-                  <span className="font-semibold text-ink-900 dark:text-white">{item.value}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <h2 className="font-display text-lg font-semibold">Location stats</h2>
+          <Table
+            columns={[
+              { key: 'location', label: 'Location' },
+              { key: 'count', label: 'Vendors' },
+            ]}
+            rows={charts.locations || []}
+          />
+        </div>
+        <div className="space-y-3 lg:col-span-2">
+          <h2 className="font-display text-lg font-semibold">Recent platform activity</h2>
+          <Table
+            columns={[
+              { key: 'type', label: 'Type', render: (a) => <StatusBadge status={a.type} /> },
+              { key: 'message', label: 'Message' },
+              { key: 'createdAt', label: 'When', render: (a) => formatDate(a.createdAt) },
+            ]}
+            rows={recent.activities || []}
+          />
         </div>
       </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-3">
+          <h2 className="font-display text-lg font-semibold">New vendors</h2>
+          <Table
+            columns={[
+              { key: 'company', label: 'Business' },
+              { key: 'name', label: 'Owner' },
+              { key: 'kycStatus', label: 'KYC', render: (v) => <StatusBadge status={v.kycStatus} /> },
+              { key: 'status', label: 'Status', render: (v) => <StatusBadge status={v.status} /> },
+            ]}
+            rows={recent.vendors || []}
+          />
+        </div>
+        <div className="space-y-3">
+          <h2 className="font-display text-lg font-semibold">New users</h2>
+          <Table
+            columns={[
+              { key: 'name', label: 'Name' },
+              { key: 'email', label: 'Email' },
+              {
+                key: 'verified',
+                label: 'Verified',
+                render: (u) => (u.verified ? 'Yes' : 'No'),
+              },
+              { key: 'status', label: 'Status', render: (u) => <StatusBadge status={u.status} /> },
+            ]}
+            rows={recent.users || []}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChartCard({ title, children }) {
+  return (
+    <div className="holo-card chart-living p-4">
+      <h2 className="mb-2 font-display text-base font-semibold">{title}</h2>
+      <div className="h-48">{children}</div>
     </div>
   );
 }

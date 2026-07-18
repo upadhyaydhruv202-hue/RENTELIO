@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import RentalSummary from '../../components/RentalSummary';
-import { formatINR, userApi } from '../../services/api';
+import ProductMedia from '../../components/ProductMedia';
+import AdBanner from '../../components/AdBanner';
+import { formatINR, productDeposit, userApi } from '../../services/api';
+import { qk } from '../../lib/query';
 
 function pushRecent(product) {
   try {
@@ -41,9 +45,7 @@ export default function ProductDetails() {
   }, [startDate, returnDate]);
 
   const rentalCost = product ? days * Number(product.pricePerDay) : 0;
-  const deposit = product
-    ? Number(product.securityDeposit) || Number(product.pricePerDay) * 2
-    : 0;
+  const deposit = productDeposit(product);
   const available = product && product.status === 'Available' && Number(product.quantity) > 0;
 
   const goCheckout = () => {
@@ -55,7 +57,7 @@ export default function ProductDetails() {
       setError('Return date must be on or after start date');
       return;
     }
-    navigate('/shop/checkout', {
+    navigate('/user/checkout', {
       state: { productId: product.id, startDate, returnDate },
     });
   };
@@ -64,15 +66,14 @@ export default function ProductDetails() {
   if (!product) return <p className="text-rose-600">{error || 'Product not found'}</p>;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
+    <div className="space-y-6">
+      <DetailsAds />
+      <div className="grid gap-8 lg:grid-cols-2">
       <div className="overflow-hidden rounded-3xl border border-ink-200/80 bg-white dark:border-ink-700 dark:bg-ink-900">
-        <img
-          src={
-            product.imageUrl ||
-            'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000&q=80'
-          }
+        <ProductMedia
+          src={product.image || product.imageUrl}
           alt={product.name}
-          className="aspect-[4/3] w-full object-cover"
+          frameClassName="aspect-[4/3] w-full p-6"
         />
       </div>
 
@@ -160,13 +161,22 @@ export default function ProductDetails() {
             Rent Now
           </button>
           <Link
-            to="/shop/browse"
+            to="/user/browse"
             className="rounded-xl border border-ink-200 px-6 py-2.5 text-sm dark:border-ink-700"
           >
             Back to browse
           </Link>
         </div>
       </div>
+      </div>
     </div>
   );
+}
+
+function DetailsAds() {
+  const { data: ads = [] } = useQuery({
+    queryKey: qk.ads('details'),
+    queryFn: () => userApi.getAds('details'),
+  });
+  return <AdBanner ads={ads} />;
 }

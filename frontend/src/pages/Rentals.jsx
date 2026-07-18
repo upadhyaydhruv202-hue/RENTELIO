@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Table, { StatusBadge } from '../components/Table';
-import { api } from '../services/api';
+import { api, calcSecurityDeposit, formatINR as formatCurrency } from '../services/api';
 import { invalidateLifecycle, POLL_MS, qk } from '../lib/query';
 
 const formatDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN') : '—');
-const formatINR = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+const formatINR = (n) => formatCurrency(n);
 
 export default function Rentals() {
   const queryClient = useQueryClient();
@@ -16,7 +16,6 @@ export default function Rentals() {
     productId: '',
     startDate: '',
     returnDate: '',
-    depositAmount: '',
   });
 
   const rentalsQuery = useQuery({
@@ -35,10 +34,16 @@ export default function Rentals() {
     mutationFn: api.createRental,
     onSuccess: async () => {
       setShowForm(false);
-      setForm({ customerName: '', productId: '', startDate: '', returnDate: '', depositAmount: '' });
+      setForm({ customerName: '', productId: '', startDate: '', returnDate: '' });
       setError('');
       await invalidateLifecycle(queryClient);
     },
+    onError: (err) => setError(err.message),
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: (id) => api.updateRental(id, { approve: true }),
+    onSuccess: async () => invalidateLifecycle(queryClient),
     onError: (err) => setError(err.message),
   });
 
@@ -60,6 +65,10 @@ export default function Rentals() {
     return days * Number(selectedProduct.pricePerDay);
   }, [selectedProduct, form.startDate, form.returnDate]);
 
+  const autoDeposit = selectedProduct
+    ? calcSecurityDeposit(selectedProduct.pricePerDay)
+    : 0;
+
   const columns = [
     { key: 'id', label: 'Rental ID', render: (r) => `#${r.id}` },
     { key: 'customerName', label: 'Customer Name' },
@@ -73,6 +82,23 @@ export default function Rentals() {
       render: (r) => formatINR(r.depositAmount),
     },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} /> },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (r) =>
+        r.status === 'Requested' ? (
+          <button
+            type="button"
+            disabled={approveMutation.isPending}
+            onClick={() => approveMutation.mutate(r.id)}
+            className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-500"
+          >
+            Approve
+          </button>
+        ) : (
+          '—'
+        ),
+    },
   ];
 
   const handleSubmit = (e) => {
@@ -82,7 +108,6 @@ export default function Rentals() {
       productId: Number(form.productId),
       startDate: form.startDate,
       returnDate: form.returnDate,
-      depositAmount: form.depositAmount ? Number(form.depositAmount) : undefined,
     });
   };
 
@@ -162,20 +187,21 @@ export default function Rentals() {
             />
           </label>
           <label className="text-sm font-medium text-ink-600 dark:text-ink-300">
-            Deposit Amount (optional)
+            Security Deposit
             <input
-              type="number"
-              min="0"
-              value={form.depositAmount}
-              onChange={(e) => setForm({ ...form, depositAmount: e.target.value })}
-              className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
+              type="text"
+              readOnly
+              value={selectedProduct ? formatINR(autoDeposit) : ''}
+              placeholder="Select a product"
+              className="mt-1.5 w-full cursor-not-allowed rounded-xl border border-ink-200 bg-ink-50 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
             />
+            <span className="mt-1 block text-xs text-ink-400">Price/day × 1.5 (auto)</span>
           </label>
           <div className="flex items-end">
             <div className="w-full rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 dark:border-brand-800 dark:bg-brand-950/30">
-              <p className="text-xs text-ink-500">Estimated Total</p>
+              <p className="text-xs text-ink-500">Rental + Deposit</p>
               <p className="font-display text-xl font-semibold text-brand-700 dark:text-brand-300">
-                ₹{estimatedAmount.toLocaleString('en-IN')}
+                {formatINR(estimatedAmount + autoDeposit)}
               </p>
             </div>
           </div>

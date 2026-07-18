@@ -24,7 +24,7 @@ export default function UserRegister({ onLogin }) {
     try {
       const data = await userApi.register(form);
       onLogin(data.customer, data.token);
-      navigate('/shop');
+      navigate('/user/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -33,18 +33,29 @@ export default function UserRegister({ onLogin }) {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
+    <div className="auth-bloom relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
       <div className="pointer-events-none absolute inset-0 splash-bg" />
-      <div className="relative w-full max-w-lg">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="splash-orb splash-orb-a opacity-40" />
+        <div className="splash-orb splash-orb-b opacity-30" />
+      </div>
+      <div className="relative w-full max-w-lg login-enter">
         <div className="mb-6">
-          <RentelioLogo size="md" centered showTagline colorClass="text-white" />
+          <RentelioLogo
+            size="md"
+            centered
+            showTagline
+            spin
+            colorClass="text-white"
+            taglineClass="!text-brand-300"
+          />
         </div>
         <form
           onSubmit={handleSubmit}
-          className="rounded-3xl border border-white/10 bg-white p-8 shadow-2xl"
+          className="rounded-3xl border border-white/15 bg-white p-8 text-ink-900 shadow-2xl"
         >
-          <h2 className="font-display text-xl font-semibold">Create your account</h2>
-          <p className="mt-1 text-sm text-ink-500">Start renting in a few clicks</p>
+          <h2 className="font-display text-xl font-semibold text-ink-950">Create your account</h2>
+          <p className="mt-1 text-sm text-ink-600">Start renting in a few clicks</p>
           {error && <p className="mt-4 text-sm text-rose-600">{error}</p>}
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {[
@@ -53,37 +64,37 @@ export default function UserRegister({ onLogin }) {
               { key: 'password', label: 'Password', type: 'password', required: true },
               { key: 'phone', label: 'Phone', type: 'tel', required: false },
             ].map((f) => (
-              <label key={f.key} className="block text-sm font-medium">
+              <label key={f.key} className="block text-sm font-medium text-ink-800">
                 {f.label}
                 <input
                   type={f.type}
                   required={f.required}
                   value={form[f.key]}
                   onChange={set(f.key)}
-                  className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2.5"
+                  className="mt-1.5 w-full rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-ink-900 placeholder:text-ink-400 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
                 />
               </label>
             ))}
-            <label className="block text-sm font-medium sm:col-span-2">
+            <label className="block text-sm font-medium text-ink-800 sm:col-span-2">
               Address
               <textarea
                 value={form.address}
                 onChange={set('address')}
                 rows={2}
-                className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2.5"
+                className="mt-1.5 w-full rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-ink-900 placeholder:text-ink-400 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               />
             </label>
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 w-full rounded-xl bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500"
+            className="btn-living mt-6 w-full rounded-xl bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500"
           >
             {loading ? 'Creating…' : 'Register'}
           </button>
-          <p className="mt-4 text-center text-sm text-ink-500">
+          <p className="mt-4 text-center text-sm text-ink-600">
             Already have an account?{' '}
-            <Link to="/shop/login" className="font-medium text-brand-700 hover:underline">
+            <Link to="/user/login" className="font-medium text-brand-700 hover:underline">
               Sign in
             </Link>
           </p>

@@ -1,42 +1,46 @@
-const { query } = require('../config/database');
+const prisma = require('../config/prisma');
+
+const sanitize = (customer) => {
+  if (!customer) return null;
+  const { password, ...rest } = customer;
+  return rest;
+};
 
 const Customer = {
-  async findByEmail(email) {
-    const result = await query('SELECT * FROM customers WHERE email = $1', [email]);
-    return result.rows[0] || null;
-  },
+  findByEmail: (email) =>
+    prisma.customer.findUnique({ where: { email: email.toLowerCase().trim() } }),
 
-  async findById(id) {
-    const result = await query(
-      `SELECT id, name, email, phone, address, created_at AS "createdAt"
-       FROM customers WHERE id = $1`,
-      [id]
-    );
-    return result.rows[0] || null;
-  },
+  findById: async (id) => sanitize(await prisma.customer.findUnique({ where: { id: Number(id) } })),
 
-  async create({ name, email, password, phone = '', address = '' }) {
-    const result = await query(
-      `INSERT INTO customers (name, email, password, phone, address)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, name, email, phone, address, created_at AS "createdAt"`,
-      [name, email, password, phone, address]
-    );
-    return result.rows[0];
-  },
+  create: async (data) =>
+    sanitize(
+      await prisma.customer.create({
+        data: {
+          name: data.name,
+          email: data.email.toLowerCase().trim(),
+          password: data.password,
+          phone: data.phone || '',
+          address: data.address || '',
+          profileImage: data.profileImage || '',
+        },
+      })
+    ),
 
-  async update(id, { name, phone, address }) {
-    const result = await query(
-      `UPDATE customers
-       SET name = COALESCE($1, name),
-           phone = COALESCE($2, phone),
-           address = COALESCE($3, address)
-       WHERE id = $4
-       RETURNING id, name, email, phone, address, created_at AS "createdAt"`,
-      [name, phone, address, id]
-    );
-    return result.rows[0] || null;
-  },
+  update: async (id, data) =>
+    sanitize(
+      await prisma.customer.update({
+        where: { id: Number(id) },
+        data: {
+          ...(data.name != null && { name: data.name }),
+          ...(data.phone != null && { phone: data.phone }),
+          ...(data.address != null && { address: data.address }),
+          ...(data.profileImage != null && { profileImage: data.profileImage }),
+          ...(data.language != null && { language: data.language }),
+          ...(data.idDocumentUrl != null && { idDocumentUrl: data.idDocumentUrl }),
+          ...(data.password != null && { password: data.password }),
+        },
+      })
+    ),
 };
 
 module.exports = Customer;

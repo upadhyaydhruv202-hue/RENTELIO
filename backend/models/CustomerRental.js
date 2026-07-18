@@ -2,6 +2,8 @@ const Customer = require('./Customer');
 const Product = require('./Product');
 const Rental = require('./Rental');
 const Deposit = require('./Deposit');
+const { daysBetween } = require('../utils/serializers');
+const { calcSecurityDeposit } = require('../utils/pricing');
 
 /**
  * Customer bookings write into the SHARED rentals + deposits tables
@@ -13,18 +15,14 @@ const CustomerRental = {
   getStats: (customerId) => Rental.getCustomerStats(customerId),
   syncStatuses: (customerId) => Rental.syncLifecycleStatuses(customerId),
 
-  async updateStatus(id, customerId, status, extra = {}) {
-    const existing = await Rental.findByIdForCustomer(id, customerId);
-    if (!existing) return null;
-
-    const updated = await Rental.update(id, { status });
-    if (extra.depositStatus) {
-      await Deposit.updateStatusByRentalId(id, extra.depositStatus);
-    }
-    return Rental.findByIdForCustomer(id, customerId) || updated;
-  },
-
-  async bookRental({ customerId, productId, startDate, returnDate }) {
+  async bookRental({
+    customerId,
+    productId,
+    startDate,
+    returnDate,
+    fulfillment = 'pickup',
+    shippingAddress = '',
+  }) {
     const customer = await Customer.findById(customerId);
     if (!customer) {
       throw Object.assign(new Error('Customer not found'), { status: 404 });
@@ -44,11 +42,10 @@ const CustomerRental = {
       throw Object.assign(new Error('Invalid rental dates'), { status: 400 });
     }
 
-    const days = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+    const days = daysBetween(startDate, returnDate);
     const amount = Number(product.pricePerDay) * days;
-    const depositAmount = Number(product.securityDeposit) || Number(product.pricePerDay) * 2;
+    const depositAmount = calcSecurityDeposit(product.pricePerDay);
 
-    // New customer bookings appear as "New Rental Request" on admin side
     const rental = await Rental.create({
       customerName: customer.name,
       customerId: customer.id,
@@ -57,6 +54,11 @@ const CustomerRental = {
       returnDate,
       amount,
       status: 'Requested',
+      fulfillment: fulfillment === 'delivery' ? 'delivery' : 'pickup',
+      shippingAddress:
+        fulfillment === 'delivery'
+          ? shippingAddress || customer.address || ''
+          : '',
     });
 
     await Deposit.create({
@@ -87,7 +89,10 @@ const CustomerRental = {
     }
 
     await Rental.update(id, { status: 'Cancelled' });
-    await Deposit.updateStatusByRentalId(id, 'Refunded');
+    await Deposit.updateStatusByRentalId(id, 'Refunded', {
+      refundedAmount: rental.depositAmount || 0,
+      lateFeeDeducted: 0,
+    });
 
     const product = await Product.findById(rental.productId);
     if (product) {

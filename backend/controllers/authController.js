@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const { signToken } = require('../utils/jwt');
 
 const login = async (req, res) => {
   try {
@@ -19,15 +20,30 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    // Super Admin portal: only role "admin" (not legacy staff "user")
+    if (user.role !== 'admin') {
+      return res.status(403).json({
+        message: 'Super Admin access only. Use Vendor or User login for other accounts.',
+      });
+    }
+
+    const token = signToken({
+      id: user.id,
+      type: 'staff',
+      role: 'admin',
+      portal: 'super_admin',
+    });
+
     res.json({
       message: 'Login successful',
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role || 'user',
+        role: 'admin',
+        roleLabel: 'Super Admin',
       },
-      token: `demo-token-${user.id}`,
+      token,
     });
   } catch (error) {
     console.error('Login error:', error);

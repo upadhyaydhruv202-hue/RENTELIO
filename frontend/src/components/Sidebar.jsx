@@ -1,72 +1,99 @@
 import { NavLink } from 'react-router-dom';
 import RentelioLogo from './RentelioLogo';
 
-const allLinks = [
-  { to: '/dashboard', label: 'Dashboard', roles: ['admin', 'user'] },
-  { to: '/products', label: 'Products', roles: ['admin', 'user'] },
-  { to: '/rentals', label: 'Rentals', roles: ['admin', 'user'] },
-  { to: '/returns', label: 'Returns', roles: ['admin', 'user'] },
-  { to: '/deposits', label: 'Deposits', roles: ['admin'] },
+const sections = [
+  {
+    label: 'Control',
+    links: [
+      { to: '/admin/dashboard', label: 'Overview', end: true },
+      { to: '/admin/fraud', label: 'Fraud Center' },
+      { to: '/admin/platform', label: 'System Health' },
+    ],
+  },
+  {
+    label: 'Marketplace',
+    links: [
+      { to: '/admin/vendors', label: 'Vendors & KYC' },
+      { to: '/admin/users', label: 'Users' },
+    ],
+  },
+  {
+    label: 'Finance',
+    links: [
+      { to: '/admin/payouts', label: 'Payouts' },
+      { to: '/admin/reports', label: 'Reports' },
+    ],
+  },
+  {
+    label: 'Platform',
+    links: [
+      { to: '/admin/notifications', label: 'Notifications' },
+      { to: '/admin/settings', label: 'Settings' },
+    ],
+  },
 ];
 
-export default function Sidebar({ open, onClose, user }) {
-  const role = user?.role || 'user';
-  const links = allLinks.filter((link) => link.roles.includes(role));
-
+export default function Sidebar({ open, onClose }) {
   return (
     <>
       {open && (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-ink-950/40 lg:hidden"
+          className="fixed inset-0 z-40 bg-ink-950/50 backdrop-blur-sm lg:hidden"
           onClick={onClose}
           aria-label="Close menu"
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-ink-200/80 bg-white transition-transform dark:border-ink-800 dark:bg-ink-950
-          lg:static lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed inset-y-3 left-3 z-50 flex w-[15.5rem] flex-col rounded-3xl nav-glass transition-transform lg:static lg:my-3 lg:ml-3 lg:translate-x-0 ${
+          open ? 'translate-x-0' : '-translate-x-[120%]'
+        }`}
       >
-        <div className="border-b border-ink-200/80 px-5 py-6 dark:border-ink-800">
+        <div className="border-b border-brand-500/10 px-5 py-6">
           <RentelioLogo
             size="sm"
             showTagline
+            spin
             colorClass="text-brand-700 dark:text-brand-300"
             taglineClass="!mt-1.5 !text-ink-500 dark:!text-ink-400 !tracking-normal"
           />
-          <span
-            className={`mt-3 inline-flex rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-              role === 'admin'
-                ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300'
-                : 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300'
-            }`}
-          >
-            {role}
+          <span className="mt-3 inline-flex rounded-md bg-brand-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-800 dark:text-brand-300">
+            Super Admin OS
           </span>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 p-3">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              onClick={onClose}
-              className={({ isActive }) =>
-                `rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                  isActive
-                    ? 'bg-brand-600 text-white shadow-sm'
-                    : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'
-                }`
-              }
-            >
-              {link.label}
-            </NavLink>
+        <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
+          {sections.map((section) => (
+            <div key={section.label}>
+              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
+                {section.label}
+              </p>
+              <div className="flex flex-col gap-1">
+                {section.links.map((link) => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    end={link.end}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      `nav-link-living rounded-xl px-3 py-2.5 text-sm font-medium ${
+                        isActive
+                          ? 'is-active'
+                          : 'text-ink-600 hover:bg-brand-500/10 dark:text-ink-300 dark:hover:bg-brand-500/10'
+                      }`
+                    }
+                  >
+                    {link.label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
-        <div className="border-t border-ink-200/80 p-4 text-xs text-ink-400 dark:border-ink-800">
-          Prototype v1.0
+        <div className="border-t border-brand-500/10 p-4 text-xs text-ink-400">
+          Living control center
         </div>
       </aside>
     </>

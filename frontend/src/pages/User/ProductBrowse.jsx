@@ -1,26 +1,38 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import ProductCard from '../../components/ProductCard';
 import SearchBar from '../../components/SearchBar';
+import AdBanner from '../../components/AdBanner';
 import { userApi } from '../../services/api';
-import { POLL_MS, qk } from '../../lib/query';
+import { invalidateLifecycle, POLL_MS, qk } from '../../lib/query';
+import { useLocale } from '../../context/LocaleContext';
+import { getCompareIds, toggleCompareId } from './Compare';
 
 export default function ProductBrowse() {
+  const { t } = useLocale();
+  const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState(params.get('search') || '');
   const [category, setCategory] = useState(params.get('category') || '');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
+  const [brand, setBrand] = useState(params.get('brand') || '');
+  const [sort, setSort] = useState(params.get('sort') || '');
+  const [minPrice, setMinPrice] = useState(params.get('minPrice') || '');
+  const [maxPrice, setMaxPrice] = useState(params.get('maxPrice') || '');
+  const [availableOnly, setAvailableOnly] = useState(true);
+  const [compareIds, setCompareIds] = useState(getCompareIds);
 
   const filters = useMemo(
     () => ({
       search: params.get('search') || search,
       category: params.get('category') || category,
+      brand: params.get('brand') || brand,
+      sort: params.get('sort') || sort,
       minPrice,
       maxPrice,
+      available: availableOnly ? undefined : 'false',
     }),
-    [params, search, category, minPrice, maxPrice]
+    [params, search, category, brand, sort, minPrice, maxPrice, availableOnly]
   );
 
   const { data, isLoading, error } = useQuery({
@@ -29,25 +41,52 @@ export default function ProductBrowse() {
     refetchInterval: POLL_MS,
   });
 
+  const { data: ads = [] } = useQuery({
+    queryKey: qk.ads('browse'),
+    queryFn: () => userApi.getAds('browse'),
+  });
+
+  const wishlist = useMutation({
+    mutationFn: userApi.addToWishlist,
+    onSuccess: () => invalidateLifecycle(queryClient),
+  });
+
+  const cart = useMutation({
+    mutationFn: (productId) => userApi.addToCart(productId),
+    onSuccess: () => invalidateLifecycle(queryClient),
+  });
+
   const products = data?.products || [];
   const categories = data?.categories || [];
+  const brands = data?.brands || [];
 
   const applyFilters = () => {
     const next = new URLSearchParams();
     if (search) next.set('search', search);
     if (category) next.set('category', category);
+    if (brand) next.set('brand', brand);
+    if (sort) next.set('sort', sort);
+    if (minPrice) next.set('minPrice', minPrice);
+    if (maxPrice) next.set('maxPrice', maxPrice);
     setParams(next);
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">Browse rentals</h1>
-        <p className="text-sm text-ink-500">Only Available products — updates live with admin inventory</p>
+        <h1 className="font-display text-2xl font-semibold">{t('browse')}</h1>
+        <p className="text-sm text-ink-500">Filter by category, brand, price & availability</p>
       </div>
 
+      <AdBanner ads={ads} />
+
       <div className="grid gap-4 rounded-2xl border border-ink-200/80 bg-white p-4 dark:border-ink-700 dark:bg-ink-900 lg:grid-cols-[1fr_auto]">
-        <SearchBar value={search} onChange={setSearch} onSubmit={applyFilters} />
+        <SearchBar
+          value={search}
+          onChange={setSearch}
+          onSubmit={applyFilters}
+          placeholder={t('searchPlaceholder')}
+        />
         <div className="flex flex-wrap gap-2">
           <select
             value={category}
@@ -60,6 +99,28 @@ export default function ProductBrowse() {
                 {c}
               </option>
             ))}
+          </select>
+          <select
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            className="rounded-xl border border-ink-200 px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-950"
+          >
+            <option value="">All brands</option>
+            {brands.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="rounded-xl border border-ink-200 px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-950"
+          >
+            <option value="">Sort</option>
+            <option value="price_asc">Price ↑</option>
+            <option value="price_desc">Price ↓</option>
+            <option value="name">Name</option>
           </select>
           <input
             type="number"
@@ -75,12 +136,20 @@ export default function ProductBrowse() {
             onChange={(e) => setMaxPrice(e.target.value)}
             className="w-24 rounded-xl border border-ink-200 px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-950"
           />
+          <label className="flex items-center gap-2 rounded-xl border border-ink-200 px-3 py-2 text-sm dark:border-ink-700">
+            <input
+              type="checkbox"
+              checked={availableOnly}
+              onChange={(e) => setAvailableOnly(e.target.checked)}
+            />
+            In stock
+          </label>
           <button
             type="button"
             onClick={applyFilters}
             className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500"
           >
-            Apply
+            {t('apply')}
           </button>
         </div>
       </div>
@@ -95,7 +164,36 @@ export default function ProductBrowse() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <div key={p.id} className="space-y-2">
+              <ProductCard product={p} />
+              <div className="flex flex-wrap gap-1 px-1">
+                <button
+                  type="button"
+                  className="rounded-lg bg-ink-100 px-2 py-1 text-[11px] dark:bg-ink-800"
+                  onClick={() => cart.mutate(p.id)}
+                >
+                  {t('addToCart')}
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg bg-ink-100 px-2 py-1 text-[11px] dark:bg-ink-800"
+                  onClick={() => wishlist.mutate(p.id)}
+                >
+                  {t('addWishlist')}
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-lg px-2 py-1 text-[11px] ${
+                    compareIds.includes(Number(p.id))
+                      ? 'bg-brand-600 text-white'
+                      : 'bg-ink-100 dark:bg-ink-800'
+                  }`}
+                  onClick={() => setCompareIds(toggleCompareId(p.id))}
+                >
+                  {t('compare')}
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       )}

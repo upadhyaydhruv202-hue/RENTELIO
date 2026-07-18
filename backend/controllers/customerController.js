@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const Customer = require('../models/Customer');
 const Product = require('../models/Product');
 const CustomerRental = require('../models/CustomerRental');
+const { signToken } = require('../utils/jwt');
+const { startOfDay } = require('../utils/serializers');
 
 const register = async (req, res) => {
   try {
@@ -24,10 +26,12 @@ const register = async (req, res) => {
       address: address || '',
     });
 
+    const token = signToken({ id: customer.id, type: 'customer', role: 'user', portal: 'user' });
+
     res.status(201).json({
       message: 'Registration successful',
-      customer,
-      token: `customer-token-${customer.id}`,
+      customer: { ...customer, role: 'user', roleLabel: 'User' },
+      token,
     });
   } catch (error) {
     console.error('Customer register error:', error);
@@ -52,6 +56,8 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    const token = signToken({ id: customer.id, type: 'customer', role: 'user', portal: 'user' });
+
     res.json({
       message: 'Login successful',
       customer: {
@@ -60,8 +66,11 @@ const login = async (req, res) => {
         email: customer.email,
         phone: customer.phone,
         address: customer.address,
+        profileImage: customer.profileImage,
+        role: 'user',
+        roleLabel: 'User',
       },
-      token: `customer-token-${customer.id}`,
+      token,
     });
   } catch (error) {
     console.error('Customer login error:', error);
@@ -79,8 +88,12 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { name, phone, address } = req.body;
-    const updated = await Customer.update(req.customer.id, { name, phone, address });
+    const { name, phone, address, profileImage, language, idDocumentUrl, password } = req.body;
+    const data = { name, phone, address, profileImage, language, idDocumentUrl };
+    if (password && String(password).length >= 6) {
+      data.password = await bcrypt.hash(String(password), 10);
+    }
+    const updated = await Customer.update(req.customer.id, data);
     res.json(updated);
   } catch (error) {
     console.error('Update profile error:', error);
@@ -90,10 +103,19 @@ const updateProfile = async (req, res) => {
 
 const getProducts = async (req, res) => {
   try {
-    const { category, search, minPrice, maxPrice } = req.query;
-    const products = await Product.findAvailable({ category, search, minPrice, maxPrice });
+    const { category, search, minPrice, maxPrice, brand, sort, available } = req.query;
+    const products = await Product.findAvailable({
+      category,
+      search,
+      minPrice,
+      maxPrice,
+      brand,
+      sort,
+      available,
+    });
     const categories = await Product.getCategories();
-    res.json({ products, categories });
+    const brands = await Product.getBrands();
+    res.json({ products, categories, brands });
   } catch (error) {
     console.error('User products error:', error);
     res.status(500).json({ message: 'Failed to fetch products' });
@@ -103,10 +125,7 @@ const getProducts = async (req, res) => {
 const getProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product || product.status !== 'Available' || Number(product.quantity) < 1) {
-      // Still return if exists so details of rented items can show "unavailable"
-      if (!product) return res.status(404).json({ message: 'Product not found' });
-    }
+    if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(product);
   } catch (error) {
     console.error('User product detail error:', error);
@@ -119,14 +138,14 @@ const getDashboard = async (req, res) => {
     await CustomerRental.syncStatuses(req.customer.id);
     const stats = await CustomerRental.getStats(req.customer.id);
     const rentals = await CustomerRental.findByCustomer(req.customer.id);
-    const { products, categories } = {
-      products: await Product.findAvailable({}),
-      categories: await Product.getCategories(),
-    };
+    const products = await Product.findAvailable({});
+    const categories = await Product.getCategories();
 
     res.json({
       stats,
-      activeRentals: rentals.filter((r) => r.status === 'Active' || r.status === 'Return Pending').slice(0, 5),
+      activeRentals: rentals
+        .filter((r) => r.status === 'Active' || r.status === 'Return Pending')
+        .slice(0, 5),
       recommended: products.slice(0, 8),
       categories,
     });
@@ -138,7 +157,7 @@ const getDashboard = async (req, res) => {
 
 const createRental = async (req, res) => {
   try {
-    const { productId, startDate, returnDate } = req.body;
+    const { productId, startDate, returnDate, fulfillment, shippingAddress } = req.body;
     if (!productId || !startDate || !returnDate) {
       return res.status(400).json({ message: 'Product and rental dates are required' });
     }
@@ -148,6 +167,8 @@ const createRental = async (req, res) => {
       productId: Number(productId),
       startDate,
       returnDate,
+      fulfillment,
+      shippingAddress,
     });
 
     const full = await CustomerRental.findById(booked.rental.id, req.customer.id);
@@ -162,6 +183,7 @@ const createRental = async (req, res) => {
         rentalCost: booked.amount,
         securityDeposit: booked.depositAmount,
         totalAmount: booked.amount + booked.depositAmount,
+        fulfillment: booked.rental.fulfillment,
       },
     });
   } catch (error) {
@@ -189,13 +211,11 @@ const getRental = async (req, res) => {
       return res.status(404).json({ message: 'Rental not found' });
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const expected = new Date(rental.returnDate);
-    expected.setHours(0, 0, 0, 0);
+    const today = startOfDay();
+    const expected = startOfDay(rental.returnDate);
     const remainingDays = Math.ceil((expected - today) / (1000 * 60 * 60 * 24));
-    let lateCharge = 0;
-    if (remainingDays < 0) {
+    let lateCharge = Number(rental.lateFee) || 0;
+    if (remainingDays < 0 && rental.status !== 'Completed') {
       lateCharge = Math.abs(remainingDays) * Number(rental.pricePerDay || 0);
     }
 

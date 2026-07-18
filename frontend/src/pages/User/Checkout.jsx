@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import RentalSummary from '../../components/RentalSummary';
-import { userApi } from '../../services/api';
+import ProductMedia from '../../components/ProductMedia';
+import { formatINR, productDeposit, userApi } from '../../services/api';
 import { invalidateLifecycle, qk } from '../../lib/query';
 
 export default function Checkout() {
@@ -11,6 +12,11 @@ export default function Checkout() {
   const queryClient = useQueryClient();
   const [error, setError] = useState('');
   const [done, setDone] = useState(null);
+  const [fulfillment, setFulfillment] = useState('pickup');
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [coupon, setCoupon] = useState(null);
+  const [couponMsg, setCouponMsg] = useState('');
 
   const productId = state?.productId;
   const startDate = state?.startDate;
@@ -23,7 +29,14 @@ export default function Checkout() {
   });
 
   const bookMutation = useMutation({
-    mutationFn: () => userApi.createRental({ productId, startDate, returnDate }),
+    mutationFn: () =>
+      userApi.createRental({
+        productId,
+        startDate,
+        returnDate,
+        fulfillment,
+        shippingAddress: fulfillment === 'delivery' ? shippingAddress : '',
+      }),
     onSuccess: async (result) => {
       setDone(result);
       await invalidateLifecycle(queryClient);
@@ -47,7 +60,7 @@ export default function Checkout() {
     return (
       <div className="rounded-2xl bg-white p-8 text-center">
         <p className="text-ink-500">No rental selection found.</p>
-        <Link to="/shop/browse" className="mt-4 inline-block text-brand-700 hover:underline">
+        <Link to="/user/browse" className="mt-4 inline-block text-brand-700 hover:underline">
           Browse products
         </Link>
       </div>
@@ -55,9 +68,29 @@ export default function Checkout() {
   }
 
   const rentalCost = product ? days * Number(product.pricePerDay) : 0;
-  const deposit = product
-    ? Number(product.securityDeposit) || Number(product.pricePerDay) * 2
-    : 0;
+  const deposit = productDeposit(product);
+  let discount = 0;
+  if (coupon) {
+    discount =
+      coupon.type === 'percent'
+        ? Math.round((rentalCost * Number(coupon.value)) / 100)
+        : Number(coupon.value);
+  }
+  const discountedRental = Math.max(0, rentalCost - discount);
+
+  const applyCoupon = async () => {
+    setCouponMsg('');
+    try {
+      const res = await userApi.validateCoupon(couponCode, rentalCost);
+      if (res.valid) {
+        setCoupon(res.coupon);
+        setCouponMsg(`Applied: ${res.coupon.label || res.coupon.code}`);
+      }
+    } catch (err) {
+      setCoupon(null);
+      setCouponMsg(err.message);
+    }
+  };
 
   if (done) {
     return (
@@ -80,14 +113,14 @@ export default function Checkout() {
         <div className="flex justify-center gap-3 pt-2">
           <button
             type="button"
-            onClick={() => navigate(`/shop/rentals/${done.rental.id}`)}
+            onClick={() => navigate(`/user/rentals/${done.rental.id}`)}
             className="rounded-xl bg-brand-600 px-5 py-2.5 text-sm text-white"
           >
             View rental
           </button>
           <button
             type="button"
-            onClick={() => navigate('/shop')}
+            onClick={() => navigate('/user')}
             className="rounded-xl border border-ink-200 px-5 py-2.5 text-sm dark:border-ink-700"
           >
             Back home
@@ -122,7 +155,11 @@ export default function Checkout() {
       ) : (
         <>
           <div className="flex gap-4 rounded-2xl border border-ink-200/80 bg-white p-4 dark:border-ink-700 dark:bg-ink-900">
-            <img src={product.imageUrl} alt="" className="h-24 w-24 rounded-xl object-cover" />
+            <ProductMedia
+              src={product.image || product.imageUrl}
+              alt={product.name}
+              frameClassName="h-24 w-24 shrink-0 rounded-xl border border-ink-100 p-1.5 dark:border-ink-800"
+            />
             <div>
               <h2 className="font-display text-lg font-semibold">{product.name}</h2>
               <p className="text-sm text-ink-500">{product.category}</p>
@@ -134,20 +171,82 @@ export default function Checkout() {
             startDate={startDate}
             returnDate={returnDate}
             days={days}
-            rentalCost={rentalCost}
+            rentalCost={discountedRental}
             securityDeposit={deposit}
-            totalAmount={rentalCost + deposit}
+            totalAmount={discountedRental + deposit}
           />
+
+          <div className="rounded-2xl border border-ink-200/80 bg-white p-5 dark:border-ink-700 dark:bg-ink-900">
+            <h3 className="font-display text-base font-semibold">Coupon</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <input
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                placeholder="e.g. WEEKEND15"
+                className="flex-1 rounded-xl border border-ink-200 px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-950"
+              />
+              <button
+                type="button"
+                onClick={applyCoupon}
+                className="rounded-xl bg-ink-900 px-4 py-2 text-sm text-white dark:bg-brand-600"
+              >
+                Apply
+              </button>
+            </div>
+            {couponMsg && <p className="mt-2 text-xs text-ink-500">{couponMsg}</p>}
+            {discount > 0 && (
+              <p className="mt-2 text-sm text-brand-700">Discount −{formatINR(discount)}</p>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-ink-200/80 bg-white p-5 dark:border-ink-700 dark:bg-ink-900">
+            <h3 className="font-display text-base font-semibold">Fulfillment</h3>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {[
+                { id: 'pickup', label: 'Collect from store' },
+                { id: 'delivery', label: 'Home delivery' },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setFulfillment(opt.id)}
+                  className={`rounded-xl px-4 py-2 text-sm font-medium ${
+                    fulfillment === opt.id
+                      ? 'bg-brand-600 text-white'
+                      : 'border border-ink-200 dark:border-ink-700'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {fulfillment === 'delivery' && (
+              <label className="mt-4 block text-sm font-medium">
+                Shipping address
+                <textarea
+                  required
+                  rows={2}
+                  value={shippingAddress}
+                  onChange={(e) => setShippingAddress(e.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
+                  placeholder="Enter delivery address"
+                />
+              </label>
+            )}
+          </div>
 
           {error && <p className="text-sm text-rose-600">{error}</p>}
 
           <button
             type="button"
-            disabled={bookMutation.isPending}
+            disabled={
+              bookMutation.isPending ||
+              (fulfillment === 'delivery' && !shippingAddress.trim())
+            }
             onClick={() => bookMutation.mutate()}
             className="w-full rounded-xl bg-brand-600 py-3 font-semibold text-white hover:bg-brand-500 disabled:opacity-60"
           >
-            {bookMutation.isPending ? 'Confirming…' : 'Confirm Booking'}
+            {bookMutation.isPending ? 'Confirming…' : 'Confirm Booking & Pay Deposit'}
           </button>
         </>
       )}

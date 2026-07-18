@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import RentalSummary from '../../components/RentalSummary';
@@ -8,6 +9,10 @@ import { invalidateLifecycle, POLL_MS, qk } from '../../lib/query';
 export default function RentalDetails() {
   const { id } = useParams();
   const queryClient = useQueryClient();
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [damageReport, setDamageReport] = useState('');
+  const [reviewMsg, setReviewMsg] = useState('');
 
   const { data: rental, error, isLoading } = useQuery({
     queryKey: qk.userRental(id),
@@ -18,6 +23,23 @@ export default function RentalDetails() {
   const cancelMutation = useMutation({
     mutationFn: () => userApi.cancelRental(id),
     onSuccess: async () => invalidateLifecycle(queryClient),
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: () =>
+      userApi.createReview({
+        productId: rental.productId,
+        rentalId: rental.id,
+        rating: Number(rating),
+        comment: [comment, damageReport ? `Damage: ${damageReport}` : '']
+          .filter(Boolean)
+          .join('\n'),
+      }),
+    onSuccess: () => {
+      setReviewMsg('Review submitted for moderation');
+      invalidateLifecycle(queryClient);
+    },
+    onError: (e) => setReviewMsg(e.message),
   });
 
   if (isLoading) return <p className="text-ink-500">Loading rental…</p>;
@@ -40,7 +62,7 @@ export default function RentalDetails() {
             <StatusBadge status={rental.status} />
           </div>
         </div>
-        <Link to="/shop/rentals" className="text-sm text-brand-700 hover:underline">
+        <Link to="/user/rentals" className="text-sm text-brand-700 hover:underline">
           ← All orders
         </Link>
       </div>
@@ -72,6 +94,10 @@ export default function RentalDetails() {
               <span className={rental.lateCharge > 0 ? 'text-rose-600' : ''}>
                 {formatINR(rental.lateCharge)}
               </span>
+            </li>
+            <li className="flex justify-between">
+              <span className="text-ink-500">Tracker</span>
+              <span>{rental.trackerStage || '—'}</span>
             </li>
             <li className="flex justify-between">
               <span className="text-ink-500">Return status</span>
@@ -112,6 +138,56 @@ export default function RentalDetails() {
         securityDeposit={Number(rental.depositAmount)}
         totalAmount={Number(rental.amount) + Number(rental.depositAmount)}
       />
+
+      {rental.status === 'Completed' && (
+        <div className="rounded-2xl border border-ink-200 bg-white p-5 dark:border-ink-700 dark:bg-ink-900">
+          <h2 className="font-display font-semibold">Rate & review</h2>
+          <p className="mt-1 text-xs text-ink-500">Available after completed return</p>
+          <div className="mt-3 space-y-3">
+            <label className="block text-sm">
+              Rating
+              <select
+                value={rating}
+                onChange={(e) => setRating(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
+              >
+                {[5, 4, 3, 2, 1].map((n) => (
+                  <option key={n} value={n}>
+                    {n} stars
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              Review
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={2}
+                className="mt-1 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
+              />
+            </label>
+            <label className="block text-sm">
+              Damage report (optional)
+              <textarea
+                value={damageReport}
+                onChange={(e) => setDamageReport(e.target.value)}
+                rows={2}
+                className="mt-1 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
+              />
+            </label>
+            {reviewMsg && <p className="text-sm text-brand-700">{reviewMsg}</p>}
+            <button
+              type="button"
+              disabled={reviewMutation.isPending}
+              onClick={() => reviewMutation.mutate()}
+              className="rounded-xl bg-brand-600 px-4 py-2 text-sm text-white"
+            >
+              Submit review
+            </button>
+          </div>
+        </div>
+      )}
 
       {['Requested', 'Approved'].includes(rental.status) && (
         <button

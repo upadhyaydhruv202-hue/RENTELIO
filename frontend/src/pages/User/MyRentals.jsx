@@ -79,7 +79,7 @@ export default function MyRentals() {
                 {filtered.map((r) => (
                   <tr key={r.id} className="hover:bg-ink-50/80 dark:hover:bg-ink-800/40">
                     <td className="px-4 py-3">
-                      <Link to={`/shop/rentals/${r.id}`} className="text-brand-700 hover:underline">
+                      <Link to={`/user/rentals/${r.id}`} className="text-brand-700 hover:underline">
                         #{r.id}
                       </Link>
                     </td>
