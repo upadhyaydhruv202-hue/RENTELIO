@@ -19,3 +19,38 @@ User and Customer are the same role (not separate).
 - **Database:** PostgreSQL (local)
 - **ORM:** Prisma 5
 - **Auth:** JWT per portal (`type`: `customer` \| `vendor` \| `staff` + `role`)
+## Prerequisites
+
+* Node.js 18+
+* Local PostgreSQL on port 5432
+
+## Setup
+
+### 1. Database
+
+```sql
+CREATE DATABASE rentelio;
+```
+
+### 2. Backend
+
+```bash
+cd backend
+cp .env.example .env
+npm install
+npx prisma db push
+npm run seed
+npm run dev
+```
+
+API: `http://localhost:5000`
+
+### 3. Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+App: `http://localhost:5173`
