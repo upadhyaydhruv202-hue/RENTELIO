@@ -5,11 +5,8 @@ import Table, { StatusBadge } from '../../components/Table';
 import { formatINR, formatDate } from '../../services/api';
 import { vendorApi } from '../../services/vendorApi';
 import { POLL_MS } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
-export default function VendorMoney() {
-  const { t } = useLocale();
-  const queryClient = useQueryClient();
+export default function VendorMoney() {  const queryClient = useQueryClient();
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
   const [invoiceForm, setInvoiceForm] = useState({ rentalId: '', type: 'rental', amount: '', details: '' });
   const [msg, setMsg] = useState('');
@@ -131,7 +128,7 @@ export default function VendorMoney() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">{t('vMoneyTitle')}</h1>
+        <h1 className="font-display text-2xl font-semibold">{'Money & Deposits'}</h1>
         <p className="text-sm text-ink-500">Deposit wallet, refunds, and invoices</p>
       </div>
 

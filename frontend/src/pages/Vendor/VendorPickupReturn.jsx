@@ -4,7 +4,6 @@ import Table, { StatusBadge } from '../../components/Table';
 import { formatDate } from '../../services/api';
 import { vendorApi } from '../../services/vendorApi';
 import { POLL_MS } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
 const STAGES = [
   'Pickup Scheduled',
@@ -20,9 +19,7 @@ const STAGES = [
 
 const FILTERS = ['today', 'tomorrow', 'week', 'month'];
 
-export default function VendorPickupReturn() {
-  const { t } = useLocale();
-  const queryClient = useQueryClient();
+export default function VendorPickupReturn() {  const queryClient = useQueryClient();
   const [filter, setFilter] = useState('week');
   const [otpDrafts, setOtpDrafts] = useState({});
   const [msg, setMsg] = useState('');
@@ -161,7 +158,7 @@ export default function VendorPickupReturn() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold">{t('vPickupTitle')}</h1>
+          <h1 className="font-display text-2xl font-semibold">{'Pickup & Return'}</h1>
           <p className="text-sm text-ink-500">Schedule, OTP verify, tracker stages & demo scan</p>
         </div>
         <div className="flex flex-wrap gap-1">

@@ -3,11 +3,8 @@ import Table from '../../components/Table';
 import { formatINR, formatDate } from '../../services/api';
 import { vendorApi } from '../../services/vendorApi';
 import { POLL_MS } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
-export default function VendorCustomers() {
-  const { t } = useLocale();
-  const { data: customers = [], isLoading, error } = useQuery({
+export default function VendorCustomers() {  const { data: customers = [], isLoading, error } = useQuery({
     queryKey: ['vendor', 'customers'],
     queryFn: vendorApi.getCustomers,
     refetchInterval: POLL_MS,
@@ -29,7 +26,7 @@ export default function VendorCustomers() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">{t('vCustomersTitle')}</h1>
+        <h1 className="font-display text-2xl font-semibold">{'Customers'}</h1>
         <p className="text-sm text-ink-500">Customers who rented your products</p>
       </div>
 

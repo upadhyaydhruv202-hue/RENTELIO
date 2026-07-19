@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import ProductMedia from '../../components/ProductMedia';
 import { formatINR, productDeposit, userApi } from '../../services/api';
-import { useLocale } from '../../context/LocaleContext';
 
 const STORAGE_KEY = 'rentelio_compare_ids';
 
@@ -27,9 +26,7 @@ export function toggleCompareId(id) {
   return next;
 }
 
-export default function Compare() {
-  const { t } = useLocale();
-  const [ids, setIds] = useState(getCompareIds);
+export default function Compare() {  const [ids, setIds] = useState(getCompareIds);
 
   useEffect(() => {
     const sync = () => setIds(getCompareIds());
@@ -53,25 +50,25 @@ export default function Compare() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">{t('compare')}</h1>
-        <p className="text-sm text-ink-500">Side-by-side up to 3 products</p>
+        <h1 className="font-display text-2xl font-semibold">{'Compare'}</h1>
+        <p className="text-sm text-ink-500">{'Side-by-side up to 3 products'}</p>
       </div>
 
       {ids.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-ink-300 bg-white p-10 text-center text-ink-500">
-          No products selected.{' '}
+          {'No products selected.'}{' '}
           <Link to="/user/browse" className="text-brand-700 hover:underline">
-            Browse and add to compare
+            {'Browse and add to compare'}
           </Link>
         </p>
       ) : isLoading ? (
-        <p className="text-ink-500">Loading…</p>
+        <p className="text-ink-500">{'Loading…'}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse text-sm">
             <thead>
               <tr>
-                <th className="p-3 text-left text-ink-400">Spec</th>
+                <th className="p-3 text-left text-ink-400">{'Spec'}</th>
                 {products.map((p) => (
                   <th key={p.id} className="min-w-[180px] p-3 text-left">
                     <ProductMedia
@@ -87,7 +84,7 @@ export default function Compare() {
                       className="mt-1 block text-xs text-rose-600"
                       onClick={() => setIds(toggleCompareId(p.id))}
                     >
-                      Remove
+                      {'Remove'}
                     </button>
                   </th>
                 ))}

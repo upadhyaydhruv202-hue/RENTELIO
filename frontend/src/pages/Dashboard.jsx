@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
   LineChart,
@@ -53,6 +53,15 @@ export default function Dashboard() {
     ];
   }, [data]);
 
+  const rentalActivity = useMemo(() => {
+    const rows = data?.charts?.rentalActivity || [];
+    let end = rows.length;
+    while (end > 1 && !Number(rows[end - 1]?.value) && !Number(rows[end - 1]?.revenue)) {
+      end -= 1;
+    }
+    return rows.slice(0, end);
+  }, [data?.charts?.rentalActivity]);
+
   if (isLoading) return <p className="text-ink-500">Loading control center…</p>;
   if (error) return <p className="text-rose-600">{error.message}</p>;
 
@@ -96,31 +105,75 @@ export default function Dashboard() {
             <h2 className="font-display text-lg font-semibold">Rental activity & revenue</h2>
             <span className="text-xs text-ink-400">Conversion {data.conversionRate}%</span>
           </div>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={charts.rentalActivity || []}>
+              <ComposedChart
+                data={rentalActivity}
+                margin={{ top: 12, right: 8, left: 0, bottom: 4 }}
+                barCategoryGap="28%"
+              >
                 <defs>
                   <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#8f79bc" stopOpacity={0.35} />
                     <stop offset="95%" stopColor="#8f79bc" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-ink-200 dark:stroke-ink-700" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis yAxisId="l" tick={{ fontSize: 11 }} />
-                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  className="stroke-ink-200 dark:stroke-ink-700"
+                />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 11 }}
+                  tickMargin={10}
+                  interval="preserveStartEnd"
+                  minTickGap={12}
+                  padding={{ left: 10, right: 10 }}
+                />
+                <YAxis
+                  yAxisId="l"
+                  tick={{ fontSize: 11 }}
+                  width={36}
+                  allowDecimals={false}
+                  tickMargin={6}
+                />
+                <YAxis
+                  yAxisId="r"
+                  orientation="right"
+                  tick={{ fontSize: 11 }}
+                  width={44}
+                  tickMargin={6}
+                  tickFormatter={(v) =>
+                    Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}k` : String(v)
+                  }
+                />
+                <Tooltip
+                  formatter={(value, name) =>
+                    name === 'Revenue' ? formatINR(value) : value
+                  }
+                />
+                <Legend verticalAlign="bottom" height={28} iconType="circle" />
+                <Bar
+                  yAxisId="l"
+                  dataKey="value"
+                  name="Rentals"
+                  fill="#0284c7"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={32}
+                />
                 <Area
                   yAxisId="r"
-                  type="monotone"
+                  type="linear"
                   dataKey="revenue"
                   name="Revenue"
                   stroke="#8f79bc"
+                  strokeWidth={2}
                   fill="url(#rev)"
+                  dot={{ r: 3, fill: '#8f79bc', strokeWidth: 0 }}
+                  activeDot={{ r: 5 }}
                 />
-                <Bar yAxisId="l" dataKey="value" name="Rentals" fill="#0284c7" radius={[4, 4, 0, 0]} />
-              </AreaChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </div>

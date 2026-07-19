@@ -3,11 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import ProductMedia from '../../components/ProductMedia';
 import { formatINR, productDeposit, userApi } from '../../services/api';
 import { invalidateLifecycle, POLL_MS, qk } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
-export default function Cart() {
-  const { t } = useLocale();
-  const queryClient = useQueryClient();
+export default function Cart() {  const queryClient = useQueryClient();
 
   const { data: items = [], isLoading, error } = useQuery({
     queryKey: qk.userCart,
@@ -29,8 +26,8 @@ export default function Cart() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold">{t('cart')}</h1>
-          <p className="text-sm text-ink-500">Items saved for checkout</p>
+          <h1 className="font-display text-2xl font-semibold">{'Cart'}</h1>
+          <p className="text-sm text-ink-500">{'Items saved for checkout'}</p>
         </div>
         {items.length > 0 && (
           <button
@@ -38,19 +35,19 @@ export default function Cart() {
             onClick={() => clear.mutate()}
             className="text-sm text-rose-600 hover:underline"
           >
-            Clear cart
+            {'Clear cart'}
           </button>
         )}
       </div>
 
       {error && <p className="text-rose-600">{error.message}</p>}
       {isLoading ? (
-        <p className="text-ink-500">Loading…</p>
+        <p className="text-ink-500">{'Loading…'}</p>
       ) : items.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-ink-300 bg-white p-10 text-center text-ink-500">
-          Cart is empty.{' '}
+          {'Cart is empty.'}{' '}
           <Link to="/user/browse" className="text-brand-700 hover:underline">
-            Browse products
+            {'Browse products'}
           </Link>
         </p>
       ) : (
@@ -70,21 +67,22 @@ export default function Cart() {
                 <div className="min-w-0 flex-1">
                   <p className="font-display font-semibold">{p.name}</p>
                   <p className="text-sm text-ink-500">
-                    {formatINR(p.pricePerDay)} / day · Deposit {formatINR(productDeposit(p))}
+                    {formatINR(p.pricePerDay)} / {'day'} · {'Deposit'}{' '}
+                    {formatINR(productDeposit(p))}
                   </p>
                 </div>
                 <Link
                   to={`/user/products/${p.id}`}
                   className="rounded-xl bg-brand-600 px-3 py-2 text-sm text-white"
                 >
-                  Rent
+                  {'Rent'}
                 </Link>
                 <button
                   type="button"
                   onClick={() => remove.mutate(p.id)}
                   className="text-sm text-rose-600"
                 >
-                  Remove
+                  {'Remove'}
                 </button>
               </li>
             );

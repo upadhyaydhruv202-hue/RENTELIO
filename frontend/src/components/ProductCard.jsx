@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import ProductMedia from './ProductMedia';
 import { formatINR, productDeposit } from '../services/api';
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product }) {
   return (
     <Link
       to={`/user/products/${product.id}`}
@@ -28,16 +28,16 @@ export default function ProductCard({ product }) {
         </p>
         <div className="mt-auto flex items-end justify-between gap-3 pt-3">
           <div>
-            <p className="text-xs text-ink-400">Per day</p>
+            <p className="text-xs text-ink-400">{'Per day'}</p>
             <p className="stat-glow font-display text-lg font-semibold text-brand-700 dark:text-brand-300">
               {formatINR(product.pricePerDay)}
             </p>
             <p className="mt-1 text-[11px] text-ink-400">
-              Deposit {formatINR(productDeposit(product))}
+              {'Deposit'} {formatINR(productDeposit(product))}
             </p>
           </div>
           <span className="btn-living rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white">
-            Rent Now
+            {'Rent Now'}
           </span>
         </div>
       </div>

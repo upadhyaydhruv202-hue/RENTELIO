@@ -4,11 +4,8 @@ import Table from '../../components/Table';
 import { formatINR } from '../../services/api';
 import { vendorApi } from '../../services/vendorApi';
 import { POLL_MS } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
-export default function VendorReports() {
-  const { t } = useLocale();
-  const { data, error, isLoading } = useQuery({
+export default function VendorReports() {  const { data, error, isLoading } = useQuery({
     queryKey: ['vendor', 'reports'],
     queryFn: vendorApi.getReports,
     refetchInterval: POLL_MS,
@@ -22,7 +19,7 @@ export default function VendorReports() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">{t('vReportsTitle')}</h1>
+        <h1 className="font-display text-2xl font-semibold">{'Reports'}</h1>
         <p className="text-sm text-ink-500">Performance metrics for your storefront</p>
       </div>
 

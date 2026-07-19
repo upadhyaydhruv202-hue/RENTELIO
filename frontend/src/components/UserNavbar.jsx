@@ -2,24 +2,22 @@ import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import RentelioLogo from './RentelioLogo';
 import SearchBar from './SearchBar';
-import { useLocale } from '../context/LocaleContext';
 
 export default function UserNavbar({ customer, onLogout, darkMode, onToggleTheme }) {
   const navigate = useNavigate();
-  const { t, locale, setLocale } = useLocale();
   const [q, setQ] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
 
   const links = [
-    { to: '/user/dashboard', label: t('home'), end: true },
-    { to: '/user/browse', label: t('browse') },
-    { to: '/user/cart', label: t('cart') },
-    { to: '/user/wishlist', label: t('wishlist') },
-    { to: '/user/wallet', label: t('wallet') },
-    { to: '/user/notifications', label: t('notifications') },
-    { to: '/user/compare', label: t('compare') },
-    { to: '/user/rentals', label: t('myRentals') },
-    { to: '/user/profile', label: t('profile') },
+    { to: '/user/dashboard', label: 'Home', end: true },
+    { to: '/user/browse', label: 'Browse' },
+    { to: '/user/cart', label: 'Cart' },
+    { to: '/user/wishlist', label: 'Wishlist' },
+    { to: '/user/wallet', label: 'Wallet' },
+    { to: '/user/notifications', label: 'Notifications' },
+    { to: '/user/compare', label: 'Compare' },
+    { to: '/user/rentals', label: 'My Rentals' },
+    { to: '/user/profile', label: 'Profile' },
   ];
 
   return (
@@ -37,7 +35,7 @@ export default function UserNavbar({ customer, onLogout, darkMode, onToggleTheme
               navigate(`/user/browse?search=${encodeURIComponent(value || '')}`);
               setMenuOpen(false);
             }}
-            placeholder={t('searchPlaceholder')}
+            placeholder="Search cameras, drones, laptops…"
           />
         </div>
 
@@ -61,16 +59,6 @@ export default function UserNavbar({ customer, onLogout, darkMode, onToggleTheme
         </nav>
 
         <div className="flex items-center gap-2">
-          <select
-            value={locale}
-            onChange={(e) => setLocale(e.target.value)}
-            className="input-living rounded-lg px-2 py-1.5 text-xs"
-            aria-label={t('language')}
-          >
-            <option value="en">EN</option>
-            <option value="hi">HI</option>
-            <option value="gu">GU</option>
-          </select>
           <button
             type="button"
             onClick={onToggleTheme}
@@ -80,14 +68,14 @@ export default function UserNavbar({ customer, onLogout, darkMode, onToggleTheme
             {darkMode ? 'Light' : 'Dark'}
           </button>
           <span className="hidden text-sm text-ink-500 dark:text-ink-400 sm:inline">
-            Hi, {customer?.name?.split(' ')[0] || 'Guest'}
+            {`Hi, ${customer?.name?.split(' ')[0] || 'Guest'}`}
           </span>
           <button
             type="button"
             onClick={onLogout}
             className="btn-living rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white"
           >
-            {t('logout')}
+            Logout
           </button>
           <button
             type="button"

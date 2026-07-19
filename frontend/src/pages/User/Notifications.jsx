@@ -1,11 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDate, userApi } from '../../services/api';
 import { invalidateLifecycle, POLL_MS, qk } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
-export default function Notifications() {
-  const { t } = useLocale();
-  const queryClient = useQueryClient();
+export default function Notifications() {  const queryClient = useQueryClient();
 
   const { data: rows = [], isLoading, error } = useQuery({
     queryKey: qk.userNotifications,
@@ -21,15 +18,15 @@ export default function Notifications() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">{t('notifications')}</h1>
-        <p className="text-sm text-ink-500">Alerts and announcements</p>
+        <h1 className="font-display text-2xl font-semibold">{'Notifications'}</h1>
+        <p className="text-sm text-ink-500">{'Alerts and announcements'}</p>
       </div>
 
       {error && <p className="text-rose-600">{error.message}</p>}
       {isLoading ? (
-        <p className="text-ink-500">Loading…</p>
+        <p className="text-ink-500">{'Loading…'}</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-ink-500">No notifications</p>
+        <p className="text-sm text-ink-500">{'No notifications'}</p>
       ) : (
         <ul className="space-y-2">
           {rows.map((n) => (
@@ -53,7 +50,7 @@ export default function Notifications() {
                     onClick={() => markRead.mutate(n.id)}
                     className="text-xs font-medium text-brand-700 hover:underline"
                   >
-                    Mark read
+                    {'Mark read'}
                   </button>
                 )}
               </div>

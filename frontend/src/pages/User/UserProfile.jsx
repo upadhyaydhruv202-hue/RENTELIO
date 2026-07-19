@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react';
 import OrderCard from '../../components/OrderCard';
 import { userApi } from '../../services/api';
-import { useLocale } from '../../context/LocaleContext';
 
 export default function UserProfile({ customer, onUpdate }) {
-  const { locale, setLocale, t } = useLocale();
   const [form, setForm] = useState({
     name: customer?.name || '',
     phone: customer?.phone || '',
     address: customer?.address || '',
     profileImage: customer?.profileImage || '',
     idDocumentUrl: customer?.idDocumentUrl || '',
-    language: customer?.language || locale || 'en',
     password: '',
   });
   const [rentals, setRentals] = useState([]);
@@ -29,10 +26,8 @@ export default function UserProfile({ customer, onUpdate }) {
           address: p.address || '',
           profileImage: p.profileImage || '',
           idDocumentUrl: p.idDocumentUrl || '',
-          language: p.language || 'en',
           password: '',
         });
-        if (p.language) setLocale(p.language);
         onUpdate?.(p);
       })
       .catch((err) => setError(err.message));
@@ -50,7 +45,6 @@ export default function UserProfile({ customer, onUpdate }) {
       const payload = { ...form };
       if (!payload.password) delete payload.password;
       const updated = await userApi.updateProfile(payload);
-      if (updated.language) setLocale(updated.language);
       onUpdate?.(updated);
       setMessage('Profile updated');
       setForm((f) => ({ ...f, password: '' }));
@@ -64,8 +58,8 @@ export default function UserProfile({ customer, onUpdate }) {
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-ink-900 dark:text-white">{t('profile')}</h1>
-        <p className="text-sm text-ink-600 dark:text-ink-400">Address, identity, language & password</p>
+        <h1 className="font-display text-2xl font-semibold text-ink-900 dark:text-white">Profile</h1>
+        <p className="text-sm text-ink-600 dark:text-ink-400">Address, identity & password</p>
 
         <form
           onSubmit={save}
@@ -113,18 +107,6 @@ export default function UserProfile({ customer, onUpdate }) {
               placeholder="https://… or /uploads/…"
               className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
             />
-          </label>
-          <label className="block text-sm font-medium">
-            {t('language')}
-            <select
-              value={form.language}
-              onChange={(e) => setForm({ ...form, language: e.target.value })}
-              className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
-            >
-              <option value="en">English</option>
-              <option value="hi">हिन्दी</option>
-              <option value="gu">ગુજરાતી</option>
-            </select>
           </label>
           <label className="block text-sm font-medium">
             New password (optional)

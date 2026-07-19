@@ -5,7 +5,6 @@ import ProductMedia from '../../components/ProductMedia';
 import { calcSecurityDeposit, formatINR } from '../../services/api';
 import { vendorApi } from '../../services/vendorApi';
 import { POLL_MS } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
 const emptyForm = {
   name: '',
@@ -29,9 +28,7 @@ const emptyForm = {
 const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_BYTES = 5 * 1024 * 1024;
 
-export default function VendorInventory() {
-  const { t } = useLocale();
-  const queryClient = useQueryClient();
+export default function VendorInventory() {  const queryClient = useQueryClient();
   const [filters, setFilters] = useState({ brand: '', category: '', color: '', size: '', search: '' });
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
@@ -241,7 +238,7 @@ export default function VendorInventory() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold">{t('vInventoryTitle')}</h1>
+          <h1 className="font-display text-2xl font-semibold">{'Inventory'}</h1>
           <p className="text-sm text-ink-500">Manage your catalog — image upload required for new products</p>
         </div>
         <button

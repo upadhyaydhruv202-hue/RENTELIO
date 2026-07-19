@@ -4,13 +4,10 @@ import Table, { StatusBadge } from '../../components/Table';
 import { formatINR, formatDate } from '../../services/api';
 import { vendorApi } from '../../services/vendorApi';
 import { POLL_MS } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
 const STATUSES = ['Requested', 'Approved', 'Active', 'Return Pending', 'Overdue', 'Completed', 'Cancelled'];
 
-export default function VendorOrders() {
-  const { t } = useLocale();
-  const queryClient = useQueryClient();
+export default function VendorOrders() {  const queryClient = useQueryClient();
   const [msg, setMsg] = useState('');
 
   const { data: rentals = [], isLoading, error } = useQuery({
@@ -67,7 +64,7 @@ export default function VendorOrders() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">{t('vOrdersTitle')}</h1>
+        <h1 className="font-display text-2xl font-semibold">{'Orders'}</h1>
         <p className="text-sm text-ink-500">Rental orders for your products</p>
       </div>
 

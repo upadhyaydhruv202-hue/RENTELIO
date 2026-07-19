@@ -4,7 +4,6 @@ import Table, { StatusBadge } from '../../components/Table';
 import { formatINR } from '../../services/api';
 import { vendorApi } from '../../services/vendorApi';
 import { POLL_MS } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
 const DISCOUNT_TYPES = [
   'Student Discount',
@@ -25,9 +24,7 @@ const emptyForm = {
   active: true,
 };
 
-export default function VendorDiscounts() {
-  const { t } = useLocale();
-  const queryClient = useQueryClient();
+export default function VendorDiscounts() {  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
@@ -96,7 +93,7 @@ export default function VendorDiscounts() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold">{t('vDiscountsTitle')}</h1>
+          <h1 className="font-display text-2xl font-semibold">{'Discounts'}</h1>
           <p className="text-sm text-ink-500">Promotional discount offers for your storefront</p>
         </div>
         <button

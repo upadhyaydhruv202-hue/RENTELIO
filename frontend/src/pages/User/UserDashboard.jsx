@@ -8,11 +8,8 @@ import AiPulseBar from '../../components/AiPulseBar';
 import RentelioLogo from '../../components/RentelioLogo';
 import { userApi } from '../../services/api';
 import { POLL_MS, qk } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
-export default function UserDashboard({ customer }) {
-  const { t } = useLocale();
-  const [compact, setCompact] = useState(
+export default function UserDashboard({ customer }) {  const [compact, setCompact] = useState(
     () => localStorage.getItem('rentelio_layout_compact') === '1'
   );
 
@@ -40,9 +37,10 @@ export default function UserDashboard({ customer }) {
     localStorage.setItem('rentelio_layout_compact', next ? '1' : '0');
   };
 
-  if (isLoading) return <p className="text-ink-500">Loading your store…</p>;
+  if (isLoading) return <p className="text-ink-500">{'Loading your store…'}</p>;
   if (error) return <p className="text-rose-600">{error.message}</p>;
 
+  const firstName = customer?.name?.split(' ')[0] || 'there';
   const cards = [
     { label: 'Active Rentals', value: data.stats.activeRentals },
     { label: 'Upcoming Returns', value: data.stats.upcomingReturns },
@@ -55,7 +53,7 @@ export default function UserDashboard({ customer }) {
       <AdBanner ads={ads} />
 
       <AiPulseBar
-        title={`Hello ${customer?.name?.split(' ')[0] || 'there'} — your rental space is ready.`}
+        title={`Hello ${firstName} — your rental space is ready.`}
         body={`${data.stats.activeRentals} active · ${data.stats.upcomingReturns} returns upcoming · ${data.stats.pendingRequests} pending.`}
       />
 
@@ -70,16 +68,14 @@ export default function UserDashboard({ customer }) {
               taglineClass="!text-brand-300 !mt-2"
             />
             <h1 className="mt-6 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-              {customer?.name?.split(' ')[0]}, {t('readyToRent')}
+              {firstName}, {'ready to rent?'}
             </h1>
-            <p className="mt-2 max-w-xl text-sm text-white/75">
-              Live inventory from Rentelio — book available gear and track it in My Rentals.
-            </p>
+            <p className="mt-2 max-w-xl text-sm text-white/75">{'Live inventory from Rentelio — book available gear and track it in My Rentals.'}</p>
             <Link
               to="/user/browse"
               className="btn-living mt-5 inline-flex rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-400"
             >
-              {t('browseAll')}
+              {'Browse all products'}
             </Link>
           </div>
           <button
@@ -96,10 +92,7 @@ export default function UserDashboard({ customer }) {
         className={`grid gap-4 ${compact ? 'sm:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-4'}`}
       >
         {cards.map((c) => (
-          <div
-            key={c.label}
-            className="holo-card p-5"
-          >
+          <div key={c.label} className="holo-card p-5">
             <p className="text-sm text-ink-500 dark:text-ink-400">{c.label}</p>
             <p className="mt-1 font-display text-3xl font-semibold text-ink-900 dark:text-white">
               {c.value}
@@ -111,7 +104,7 @@ export default function UserDashboard({ customer }) {
       {data.categories?.length > 0 && (
         <section>
           <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-white">
-            Shop by category
+            {'Shop by category'}
           </h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {data.categories.map((cat) => (
@@ -130,10 +123,10 @@ export default function UserDashboard({ customer }) {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-white">
-            Recommended for you
+            {'Recommended for you'}
           </h2>
           <Link to="/user/browse" className="text-sm text-brand-700 hover:underline dark:text-brand-300">
-            See all
+            {'See all'}
           </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -146,7 +139,7 @@ export default function UserDashboard({ customer }) {
       {recent.length > 0 && (
         <section>
           <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-white">
-            Recently viewed
+            {'Recently viewed'}
           </h2>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {recent.slice(0, 4).map((p) => (
@@ -159,15 +152,15 @@ export default function UserDashboard({ customer }) {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-white">
-            Active rentals
+            {'Active Rentals'}
           </h2>
           <Link to="/user/rentals" className="text-sm text-brand-700 hover:underline dark:text-brand-300">
-            Your orders
+            {'Your orders'}
           </Link>
         </div>
         {data.activeRentals.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-ink-300 bg-white p-8 text-center text-sm text-ink-600 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300">
-            No active rentals yet. Find something to rent!
+            {'No active rentals yet. Find something to rent!'}
           </p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">

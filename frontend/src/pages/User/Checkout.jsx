@@ -6,8 +6,7 @@ import ProductMedia from '../../components/ProductMedia';
 import { formatINR, productDeposit, userApi } from '../../services/api';
 import { invalidateLifecycle, qk } from '../../lib/query';
 
-export default function Checkout() {
-  const { state } = useLocation();
+export default function Checkout() {  const { state } = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [error, setError] = useState('');
@@ -59,9 +58,9 @@ export default function Checkout() {
   if (!productId || !startDate || !returnDate) {
     return (
       <div className="rounded-2xl bg-white p-8 text-center">
-        <p className="text-ink-500">No rental selection found.</p>
+        <p className="text-ink-500">{'No rental selection found.'}</p>
         <Link to="/user/browse" className="mt-4 inline-block text-brand-700 hover:underline">
-          Browse products
+          {'Browse products'}
         </Link>
       </div>
     );
@@ -92,14 +91,15 @@ export default function Checkout() {
     }
   };
 
+  const steps = ['Select Product', 'Choose Duration', 'Review Summary', 'Confirm Booking'];
+
   if (done) {
     return (
       <div className="mx-auto max-w-lg space-y-4 rounded-3xl border border-brand-200 bg-white p-8 text-center dark:border-brand-800 dark:bg-ink-900">
-        <p className="text-sm font-medium text-brand-700">Booking confirmed</p>
-        <h1 className="font-display text-2xl font-bold">You&apos;re all set!</h1>
+        <p className="text-sm font-medium text-brand-700">{'Booking confirmed'}</p>
+        <h1 className="font-display text-2xl font-bold">{"You're all set!"}</h1>
         <p className="text-sm text-ink-500">
-          Rental #{done.rental.id} for {done.summary.productName} is now in admin Rentals as a new
-          request / active rental. The product is no longer listed as available.
+          {`Rental #${done.rental.id} for ${done.summary.productName} is now in admin Rentals as a new request / active rental. The product is no longer listed as available.`}
         </p>
         <RentalSummary
           productName={done.summary.productName}
@@ -116,14 +116,14 @@ export default function Checkout() {
             onClick={() => navigate(`/user/rentals/${done.rental.id}`)}
             className="rounded-xl bg-brand-600 px-5 py-2.5 text-sm text-white"
           >
-            View rental
+            {'View rental'}
           </button>
           <button
             type="button"
             onClick={() => navigate('/user')}
             className="rounded-xl border border-ink-200 px-5 py-2.5 text-sm dark:border-ink-700"
           >
-            Back home
+            {'Back home'}
           </button>
         </div>
       </div>
@@ -133,12 +133,12 @@ export default function Checkout() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Checkout</p>
-        <h1 className="font-display text-2xl font-semibold">Review & confirm</h1>
+        <p className="text-xs font-medium uppercase tracking-wide text-ink-400">{'Checkout'}</p>
+        <h1 className="font-display text-2xl font-semibold">{'Review & confirm'}</h1>
       </div>
 
       <ol className="flex flex-wrap gap-2 text-xs text-ink-500">
-        {['Select Product', 'Choose Duration', 'Review Summary', 'Confirm Booking'].map((step, i) => (
+        {steps.map((step, i) => (
           <li
             key={step}
             className={`rounded-full px-3 py-1 ${
@@ -151,7 +151,7 @@ export default function Checkout() {
       </ol>
 
       {!product ? (
-        <p className="text-ink-500">Loading…</p>
+        <p className="text-ink-500">{'Loading…'}</p>
       ) : (
         <>
           <div className="flex gap-4 rounded-2xl border border-ink-200/80 bg-white p-4 dark:border-ink-700 dark:bg-ink-900">
@@ -177,7 +177,7 @@ export default function Checkout() {
           />
 
           <div className="rounded-2xl border border-ink-200/80 bg-white p-5 dark:border-ink-700 dark:bg-ink-900">
-            <h3 className="font-display text-base font-semibold">Coupon</h3>
+            <h3 className="font-display text-base font-semibold">{'Coupon'}</h3>
             <div className="mt-3 flex flex-wrap gap-2">
               <input
                 value={couponCode}
@@ -190,17 +190,19 @@ export default function Checkout() {
                 onClick={applyCoupon}
                 className="rounded-xl bg-ink-900 px-4 py-2 text-sm text-white dark:bg-brand-600"
               >
-                Apply
+                {'Apply'}
               </button>
             </div>
             {couponMsg && <p className="mt-2 text-xs text-ink-500">{couponMsg}</p>}
             {discount > 0 && (
-              <p className="mt-2 text-sm text-brand-700">Discount −{formatINR(discount)}</p>
+              <p className="mt-2 text-sm text-brand-700">
+                {`Discount −${formatINR(discount)}`}
+              </p>
             )}
           </div>
 
           <div className="rounded-2xl border border-ink-200/80 bg-white p-5 dark:border-ink-700 dark:bg-ink-900">
-            <h3 className="font-display text-base font-semibold">Fulfillment</h3>
+            <h3 className="font-display text-base font-semibold">{'Fulfillment'}</h3>
             <div className="mt-3 flex flex-wrap gap-3">
               {[
                 { id: 'pickup', label: 'Collect from store' },
@@ -222,14 +224,14 @@ export default function Checkout() {
             </div>
             {fulfillment === 'delivery' && (
               <label className="mt-4 block text-sm font-medium">
-                Shipping address
+                {'Shipping address'}
                 <textarea
                   required
                   rows={2}
                   value={shippingAddress}
                   onChange={(e) => setShippingAddress(e.target.value)}
                   className="mt-1.5 w-full rounded-xl border border-ink-200 px-3 py-2 dark:border-ink-700 dark:bg-ink-950"
-                  placeholder="Enter delivery address"
+                  placeholder={'Enter delivery address'}
                 />
               </label>
             )}

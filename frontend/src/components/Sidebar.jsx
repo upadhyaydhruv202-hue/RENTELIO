@@ -1,39 +1,39 @@
 import { NavLink } from 'react-router-dom';
 import RentelioLogo from './RentelioLogo';
 
-const sections = [
-  {
-    label: 'Control',
-    links: [
-      { to: '/admin/dashboard', label: 'Overview', end: true },
-      { to: '/admin/fraud', label: 'Fraud Center' },
-      { to: '/admin/platform', label: 'System Health' },
-    ],
-  },
-  {
-    label: 'Marketplace',
-    links: [
-      { to: '/admin/vendors', label: 'Vendors & KYC' },
-      { to: '/admin/users', label: 'Users' },
-    ],
-  },
-  {
-    label: 'Finance',
-    links: [
-      { to: '/admin/payouts', label: 'Payouts' },
-      { to: '/admin/reports', label: 'Reports' },
-    ],
-  },
-  {
-    label: 'Platform',
-    links: [
-      { to: '/admin/notifications', label: 'Notifications' },
-      { to: '/admin/settings', label: 'Settings' },
-    ],
-  },
-];
+export default function Sidebar({ open, onClose }) {
+  const sections = [
+    {
+      label: 'Control',
+      links: [
+        { to: '/admin/dashboard', label: 'Overview', end: true },
+        { to: '/admin/fraud', label: 'Fraud Center' },
+        { to: '/admin/platform', label: 'System Health' },
+      ],
+    },
+    {
+      label: 'Marketplace',
+      links: [
+        { to: '/admin/vendors', label: 'Vendors & KYC' },
+        { to: '/admin/users', label: 'Users' },
+      ],
+    },
+    {
+      label: 'Finance',
+      links: [
+        { to: '/admin/payouts', label: 'Payouts' },
+        { to: '/admin/reports', label: 'Reports' },
+      ],
+    },
+    {
+      label: 'Platform',
+      links: [
+        { to: '/admin/notifications', label: 'Notifications' },
+        { to: '/admin/settings', label: 'Settings' },
+      ],
+    },
+  ];
 
-export default function Sidebar({ open, onClose }) {
   return (
     <>
       {open && (
@@ -41,7 +41,7 @@ export default function Sidebar({ open, onClose }) {
           type="button"
           className="fixed inset-0 z-40 bg-ink-950/50 backdrop-blur-sm lg:hidden"
           onClick={onClose}
-          aria-label="Close menu"
+          aria-label={'Close menu'}
         />
       )}
 
@@ -59,7 +59,7 @@ export default function Sidebar({ open, onClose }) {
             taglineClass="!mt-1.5 !text-ink-500 dark:!text-ink-400 !tracking-normal"
           />
           <span className="mt-3 inline-flex rounded-md bg-brand-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-800 dark:text-brand-300">
-            Super Admin OS
+            {'Super Admin OS'}
           </span>
         </div>
 
@@ -93,7 +93,7 @@ export default function Sidebar({ open, onClose }) {
         </nav>
 
         <div className="border-t border-brand-500/10 p-4 text-xs text-ink-400">
-          Living control center
+          {'Living control center'}
         </div>
       </aside>
     </>

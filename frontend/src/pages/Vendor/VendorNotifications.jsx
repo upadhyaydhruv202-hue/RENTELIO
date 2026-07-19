@@ -2,11 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '../../services/api';
 import { vendorApi } from '../../services/vendorApi';
 import { POLL_MS } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
-export default function VendorNotifications() {
-  const { t } = useLocale();
-  const queryClient = useQueryClient();
+export default function VendorNotifications() {  const queryClient = useQueryClient();
 
   const { data: rows = [], isLoading, error } = useQuery({
     queryKey: ['vendor', 'notifications'],
@@ -22,7 +19,7 @@ export default function VendorNotifications() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">{t('vNotificationsTitle')}</h1>
+        <h1 className="font-display text-2xl font-semibold">{'Notifications'}</h1>
         <p className="text-sm text-ink-500">Alerts for your seller account</p>
       </div>
 

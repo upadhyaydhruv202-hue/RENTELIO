@@ -48,8 +48,10 @@ export default function UserLogin({ onLogin }) {
           onSubmit={handleSubmit}
           className="rounded-3xl border border-white/15 bg-white p-8 text-ink-900 shadow-2xl"
         >
-          <h2 className="font-display text-xl font-semibold text-ink-950">User Sign in</h2>
-          <p className="mt-1 text-sm text-ink-600">Rent products from marketplace vendors</p>
+          <div>
+            <h2 className="font-display text-xl font-semibold text-ink-950">User Sign in</h2>
+            <p className="mt-1 text-sm text-ink-600">Rent products from marketplace vendors</p>
+          </div>
           {error && <p className="mt-4 text-sm text-rose-600">{error}</p>}
           <label className="mt-5 block text-sm font-medium text-ink-800">
             Email

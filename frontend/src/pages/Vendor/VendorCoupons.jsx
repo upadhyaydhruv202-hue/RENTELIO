@@ -4,7 +4,6 @@ import Table, { StatusBadge } from '../../components/Table';
 import { formatINR, formatDate } from '../../services/api';
 import { vendorApi } from '../../services/vendorApi';
 import { POLL_MS } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
 const emptyForm = {
   code: '',
@@ -17,9 +16,7 @@ const emptyForm = {
   active: true,
 };
 
-export default function VendorCoupons() {
-  const { t } = useLocale();
-  const queryClient = useQueryClient();
+export default function VendorCoupons() {  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -127,7 +124,7 @@ export default function VendorCoupons() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold">{t('vCouponsTitle')}</h1>
+          <h1 className="font-display text-2xl font-semibold">{'Coupons'}</h1>
           <p className="text-sm text-ink-500">Create and manage coupon codes</p>
         </div>
         <button

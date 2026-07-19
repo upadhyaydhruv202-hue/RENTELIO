@@ -18,13 +18,10 @@ import AiPulseBar from '../../components/AiPulseBar';
 import { formatINR, formatDate } from '../../services/api';
 import { vendorApi } from '../../services/vendorApi';
 import { POLL_MS } from '../../lib/query';
-import { useLocale } from '../../context/LocaleContext';
 
 const PIE_COLORS = ['#8f79bc', '#9aabd9', '#d97706', '#7c3aed'];
 
-export default function VendorDashboard() {
-  const { t } = useLocale();
-  const [period, setPeriod] = useState('daily');
+export default function VendorDashboard() {  const [period, setPeriod] = useState('daily');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['vendor', 'dashboard'],
@@ -49,7 +46,7 @@ export default function VendorDashboard() {
     return Math.max(1, ...Object.values(days));
   }, [data]);
 
-  if (isLoading) return <p className="text-ink-500">{t('vLoading')}</p>;
+  if (isLoading) return <p className="text-ink-500">{'Loading seller dashboard…'}</p>;
   if (error) return <p className="text-rose-600">{error.message}</p>;
 
   const { stats, profit, activities = [], heatmap } = data;
@@ -73,12 +70,12 @@ export default function VendorDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">{t('vSellerDashboard')}</h1>
-        <p className="text-sm text-ink-500">{t('vDashboardSub')}</p>
+        <h1 className="font-display text-2xl font-semibold">{'Seller Dashboard'}</h1>
+        <p className="text-sm text-ink-500">{'Your storefront KPIs — isolated to your catalog only'}</p>
       </div>
 
       <AiPulseBar
-        title={t('vNodeSync')}
+        title={'Vendor node synchronized'}
         body={`${stats.activeRentals} active rentals · ${formatINR(stats.totalRevenue)} revenue · ${stats.availableProducts} available SKUs.`}
       />
 

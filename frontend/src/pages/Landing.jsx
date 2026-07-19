@@ -2,14 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import RentelioLogo from '../components/RentelioLogo';
 
-const FLOATERS = [
-  { label: 'Cameras', emoji: '◎', delay: '0s' },
-  { label: 'Homes', emoji: '◇', delay: '0.35s' },
-  { label: 'Vehicles', emoji: '◈', delay: '0.7s' },
-  { label: 'Gear', emoji: '△', delay: '1.05s' },
-  { label: 'Packages', emoji: '□', delay: '1.4s' },
-];
-
 function RevealSection({ children, className = '' }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -36,6 +28,20 @@ function RevealSection({ children, className = '' }) {
 
 export default function Landing() {
   const [phase, setPhase] = useState(0);
+
+  const floaters = [
+    { label: 'Cameras', emoji: '◎', delay: '0s' },
+    { label: 'Homes', emoji: '◇', delay: '0.35s' },
+    { label: 'Vehicles', emoji: '◈', delay: '0.7s' },
+    { label: 'Gear', emoji: '△', delay: '1.05s' },
+    { label: 'Packages', emoji: '□', delay: '1.4s' },
+  ];
+
+  const portals = [
+    { title: 'Users', body: 'Browse, book, wallet, and track rentals in a fluid storefront.', to: '/user/login' },
+    { title: 'Vendors', body: 'Inventory, pickup OTP, settlements, and performance in Seller Central.', to: '/vendor/login' },
+    { title: 'Super Admin', body: 'KYC, fraud, payouts, health, and command-center analytics.', to: '/admin/login' },
+  ];
 
   useEffect(() => {
     const timers = [
@@ -69,13 +75,13 @@ export default function Landing() {
             to="/vendor/login"
             className="btn-living rounded-xl border border-white/20 px-3 py-2 text-sm text-white/90"
           >
-            Vendor
+            {'Vendor'}
           </Link>
           <Link
             to="/admin/login"
             className="btn-living rounded-xl bg-brand-500 px-3 py-2 text-sm font-semibold text-ink-950"
           >
-            Super Admin
+            {'Super Admin'}
           </Link>
         </div>
       </header>
@@ -105,8 +111,7 @@ export default function Landing() {
 
           {phase >= 2 && (
             <p className="mx-auto mt-5 max-w-2xl text-base text-white/65 login-enter sm:text-lg">
-              An intelligent rental operating system — inventory, settlements, verification, and
-              trust in one living interface.
+              {'An intelligent rental operating system — inventory, settlements, verification, and trust in one living interface.'}
             </p>
           )}
 
@@ -116,20 +121,20 @@ export default function Landing() {
                 to="/user/login"
                 className="btn-living rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-ink-950"
               >
-                Enter marketplace
+                {'Enter marketplace'}
               </Link>
               <Link
                 to="/user/register"
                 className="btn-living rounded-2xl border border-white/25 px-6 py-3 text-sm font-medium text-white"
               >
-                Create account
+                {'Create account'}
               </Link>
             </div>
           )}
 
           {phase >= 3 && (
             <div className="mt-14 flex w-full max-w-3xl flex-wrap items-stretch justify-center gap-3">
-              {FLOATERS.map((f) => (
+              {floaters.map((f) => (
                 <div
                   key={f.label}
                   className="float-orb-tile flex w-[6.5rem] flex-col items-center justify-center px-3 py-4 sm:w-[7.25rem]"
@@ -149,31 +154,15 @@ export default function Landing() {
       <div className="relative z-10 mx-auto w-full max-w-6xl space-y-24 px-5 py-24 text-center md:px-8">
         <RevealSection>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-300">
-            Ecosystem
+            {'Ecosystem'}
           </p>
           <h2 className="mx-auto mt-3 max-w-2xl font-display text-3xl font-semibold text-white md:text-4xl">
-            Three portals. One living rental universe.
+            {'Three portals. One living rental universe.'}
           </h2>
           <div className="mt-10 grid gap-4 text-left md:grid-cols-3">
-            {[
-              {
-                title: 'Users',
-                body: 'Browse, book, wallet, and track rentals in a fluid storefront.',
-                to: '/user/login',
-              },
-              {
-                title: 'Vendors',
-                body: 'Inventory, pickup OTP, settlements, and performance in Seller Central.',
-                to: '/vendor/login',
-              },
-              {
-                title: 'Super Admin',
-                body: 'KYC, fraud, payouts, health, and command-center analytics.',
-                to: '/admin/login',
-              },
-            ].map((card) => (
+            {portals.map((card) => (
               <Link
-                key={card.title}
+                key={card.to}
                 to={card.to}
                 className="block rounded-2xl border border-white/15 bg-white/5 p-6 text-white backdrop-blur-md transition hover:bg-white/10"
               >
@@ -186,24 +175,20 @@ export default function Landing() {
 
         <RevealSection>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyber-400">
-            Intelligence
+            {'Intelligence'}
           </p>
           <h2 className="mx-auto mt-3 max-w-xl font-display text-3xl font-semibold text-white">
-            Designed to feel assisted — without changing how Rentelio works.
+            {'Designed to feel assisted — without changing how Rentelio works.'}
           </h2>
           <ul className="mx-auto mt-8 grid max-w-4xl gap-3 text-left text-sm text-white/70 md:grid-cols-2">
-            <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white/80 backdrop-blur-sm">
-              AI-style verification theater around existing KYC decisions
-            </li>
-            <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white/80 backdrop-blur-sm">
-              Living charts and holographic KPI panels
-            </li>
-            <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white/80 backdrop-blur-sm">
-              Fraud center with cybersecurity pulse aesthetics
-            </li>
-            <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white/80 backdrop-blur-sm">
-              System health with heartbeat and capacity visualizations
-            </li>
+            {['AI-style verification theater around existing KYC decisions', 'Living charts and holographic KPI panels', 'Fraud center with cybersecurity pulse aesthetics', 'System health with heartbeat and capacity visualizations'].map((item) => (
+              <li
+                key={item}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white/80 backdrop-blur-sm"
+              >
+                {item}
+              </li>
+            ))}
           </ul>
         </RevealSection>
       </div>

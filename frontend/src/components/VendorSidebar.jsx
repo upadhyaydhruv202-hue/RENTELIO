@@ -1,24 +1,21 @@
 import { NavLink } from 'react-router-dom';
 import RentelioLogo from './RentelioLogo';
-import { useLocale } from '../context/LocaleContext';
 
 const links = [
-  { to: '/vendor/dashboard', key: 'vDashboard', end: true },
-  { to: '/vendor/inventory', key: 'vInventory' },
-  { to: '/vendor/pickup-return', key: 'vPickupReturn' },
-  { to: '/vendor/money', key: 'vMoney' },
-  { to: '/vendor/orders', key: 'vOrders' },
-  { to: '/vendor/customers', key: 'vCustomers' },
-  { to: '/vendor/discounts', key: 'vDiscounts' },
-  { to: '/vendor/coupons', key: 'vCoupons' },
-  { to: '/vendor/reports', key: 'vReports' },
-  { to: '/vendor/notifications', key: 'vNotifications' },
-  { to: '/vendor/profile', key: 'vProfile' },
+  { to: '/vendor/dashboard', label: 'Dashboard', end: true },
+  { to: '/vendor/inventory', label: 'Inventory Management' },
+  { to: '/vendor/pickup-return', label: 'Pickup & Return' },
+  { to: '/vendor/money', label: 'Money Workflow' },
+  { to: '/vendor/orders', label: 'Rental Orders' },
+  { to: '/vendor/customers', label: 'Customers' },
+  { to: '/vendor/discounts', label: 'Discounts & Offers' },
+  { to: '/vendor/coupons', label: 'Coupons' },
+  { to: '/vendor/reports', label: 'Reports' },
+  { to: '/vendor/notifications', label: 'Notifications' },
+  { to: '/vendor/profile', label: 'Profile' },
 ];
 
 export default function VendorSidebar({ open, onClose, vendor }) {
-  const { t } = useLocale();
-
   return (
     <>
       {open && (
@@ -26,7 +23,7 @@ export default function VendorSidebar({ open, onClose, vendor }) {
           type="button"
           className="fixed inset-0 z-40 bg-ink-950/50 backdrop-blur-sm lg:hidden"
           onClick={onClose}
-          aria-label={t('menu')}
+          aria-label="Menu"
         />
       )}
       <aside
@@ -43,10 +40,10 @@ export default function VendorSidebar({ open, onClose, vendor }) {
             taglineClass="!mt-1.5 !text-ink-500 dark:!text-ink-400 !tracking-normal"
           />
           <p className="mt-3 text-sm font-semibold text-ink-800 dark:text-ink-100">
-            {vendor?.company || t('sellerPortal')}
+            {vendor?.company || 'Seller Portal'}
           </p>
           <span className="mt-1 inline-flex rounded-md bg-brand-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-800 dark:text-brand-300">
-            {t('vendorNode')}
+            Vendor Node
           </span>
         </div>
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
@@ -64,12 +61,12 @@ export default function VendorSidebar({ open, onClose, vendor }) {
                 }`
               }
             >
-              {t(link.key)}
+              {link.label}
             </NavLink>
           ))}
         </nav>
         <div className="border-t border-brand-500/10 p-4 text-xs text-ink-400">
-          {t('sellerCentral')}
+          Seller Central · Living UI
         </div>
       </aside>
     </>

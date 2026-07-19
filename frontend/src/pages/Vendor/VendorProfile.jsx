@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { vendorApi } from '../../services/vendorApi';
-import { useLocale } from '../../context/LocaleContext';
 
-export default function VendorProfile({ vendor, onUpdate }) {
-  const { t } = useLocale();
-  const queryClient = useQueryClient();
+export default function VendorProfile({ vendor, onUpdate }) {  const queryClient = useQueryClient();
   const [form, setForm] = useState({
     company: vendor?.company || '',
     phone: vendor?.phone || '',
@@ -73,8 +70,8 @@ export default function VendorProfile({ vendor, onUpdate }) {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">{t('vProfileTitle')}</h1>
-        <p className="text-sm text-ink-500">{t('vProfileSub')}</p>
+        <h1 className="font-display text-2xl font-semibold">{'Seller Profile'}</h1>
+        <p className="text-sm text-ink-500">{'Company details, contact info & late fee settings'}</p>
       </div>
 
       <form

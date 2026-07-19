@@ -1,10 +1,7 @@
 import { Link } from 'react-router-dom';
 import RentelioLogo from './RentelioLogo';
-import { useLocale } from '../context/LocaleContext';
 
 export default function Navbar({ darkMode, onToggleTheme, onLogout, user }) {
-  const { locale, setLocale } = useLocale();
-
   return (
     <header className="sticky top-0 z-30 mx-3 mt-3 flex h-16 items-center justify-between rounded-2xl px-4 nav-glass lg:mx-4 lg:px-6">
       <div className="flex items-center gap-3 lg:hidden">
@@ -15,7 +12,8 @@ export default function Navbar({ darkMode, onToggleTheme, onLogout, user }) {
 
       <div className="hidden lg:block">
         <p className="text-sm text-ink-500 dark:text-ink-400">
-          Neural link active{user?.name ? ` · ${user.name.split(' ')[0]}` : ''}
+          Neural link active
+          {user?.name ? ` · ${user.name.split(' ')[0]}` : ''}
         </p>
         <p className="font-display text-base font-semibold text-ink-900 dark:text-white">
           Super Admin Command
@@ -23,16 +21,6 @@ export default function Navbar({ darkMode, onToggleTheme, onLogout, user }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <select
-          value={locale}
-          onChange={(e) => setLocale(e.target.value)}
-          className="input-living rounded-xl px-2 py-2 text-xs"
-          aria-label="Language"
-        >
-          <option value="en">EN</option>
-          <option value="hi">HI</option>
-          <option value="gu">GU</option>
-        </select>
         {user?.role && (
           <span className="hidden rounded-lg bg-brand-500/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800 dark:text-brand-300 sm:inline-flex">
             {user.role}
