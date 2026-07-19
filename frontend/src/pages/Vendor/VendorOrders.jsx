@@ -4,11 +4,19 @@ import Table, { StatusBadge } from '../../components/Table';
 import { formatINR, formatDate } from '../../services/api';
 import { vendorApi } from '../../services/vendorApi';
 import { POLL_MS } from '../../lib/query';
+import VendorRentalScheduler from './VendorRentalScheduler';
 
 const STATUSES = ['Requested', 'Approved', 'Active', 'Return Pending', 'Overdue', 'Completed', 'Cancelled'];
 
-export default function VendorOrders() {  const queryClient = useQueryClient();
+const VIEWS = [
+  { id: 'orders', label: 'Orders' },
+  { id: 'schedule', label: 'Schedule' },
+];
+
+export default function VendorOrders() {
+  const queryClient = useQueryClient();
   const [msg, setMsg] = useState('');
+  const [view, setView] = useState('orders');
 
   const { data: rentals = [], isLoading, error } = useQuery({
     queryKey: ['vendor', 'rentals'],
@@ -63,17 +71,41 @@ export default function VendorOrders() {  const queryClient = useQueryClient();
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-semibold">{'Orders'}</h1>
-        <p className="text-sm text-ink-500">Rental orders for your products</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-semibold">{'Rental Orders'}</h1>
+          <p className="text-sm text-ink-500">Manage orders and view the rental schedule</p>
+        </div>
+        <div className="inline-flex rounded-xl border border-ink-200 bg-white/70 p-1 dark:border-ink-700 dark:bg-ink-950/50">
+          {VIEWS.map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              onClick={() => setView(v.id)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                view === v.id
+                  ? 'bg-brand-600 text-white shadow-sm'
+                  : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'
+              }`}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {msg && <p className="text-sm text-brand-700">{msg}</p>}
-      {error && <p className="text-rose-600">{error.message}</p>}
-      {isLoading ? (
-        <p className="text-ink-500">Loading orders…</p>
+      {view === 'schedule' ? (
+        <VendorRentalScheduler rentals={rentals} isLoading={isLoading} error={error} />
       ) : (
-        <Table columns={columns} rows={rentals} emptyMessage="No orders yet" />
+        <>
+          {msg && <p className="text-sm text-brand-700">{msg}</p>}
+          {error && <p className="text-rose-600">{error.message}</p>}
+          {isLoading ? (
+            <p className="text-ink-500">Loading orders…</p>
+          ) : (
+            <Table columns={columns} rows={rentals} emptyMessage="No orders yet" />
+          )}
+        </>
       )}
     </div>
   );
